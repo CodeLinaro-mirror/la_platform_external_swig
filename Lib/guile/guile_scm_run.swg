@@ -27,8 +27,7 @@ scm_module_variable (SCM module, SCM sym)
 #endif
 
 #if SCM_MAJOR_VERSION >= 2
-// scm_c_define_gsubr takes a different parameter type
-// depending on the guile version
+/* scm_c_define_gsubr takes a different parameter type depending on the guile version */
 
 typedef scm_t_subr swig_guile_proc;
 #else
@@ -177,6 +176,11 @@ SWIG_Guile_ConvertPtr(SCM s, void **result, swig_type_info *type, int flags)
   if (SCM_NULLP(smob)) {
     *result = NULL;
     return SWIG_OK;
+#if SCM_MAJOR_VERSION >= 2
+  } else if (SCM_POINTER_P(s)) {
+    *result = SCM_POINTER_VALUE(s);
+    return SWIG_OK;
+#endif /* if SCM_MAJOR_VERSION >= 2 */
   } else if (SCM_SMOB_PREDICATE(swig_tag, smob) || SCM_SMOB_PREDICATE(swig_collectable_tag, smob)) {
     /* we do not accept smobs representing destroyed pointers */
     from = (swig_type_info *) SCM_CELL_WORD_2(smob);

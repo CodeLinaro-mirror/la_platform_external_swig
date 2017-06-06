@@ -1,4 +1,7 @@
-# file: runme_args.m
+# do not dump Octave core
+if exist("crash_dumps_octave_core", "builtin")
+  crash_dumps_octave_core(0);
+endif
 
 # load module
 clear all;
@@ -61,9 +64,8 @@ testme
 testme
 clear all
 
-# octave 3.0.5 randomly crashes on the remaining tests, so skip them
-api_version = sscanf(octave_config_info("api_version"), "api-v%i");
-if api_version < 37
+# octave 3.0.5 randomly crashes on the remaining tests
+if !swig_octave_prereq(3,2,0)
   exit
 endif
 

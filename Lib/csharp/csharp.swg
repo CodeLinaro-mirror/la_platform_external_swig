@@ -35,10 +35,10 @@ using global::System.Runtime.InteropServices;
 /* Pack binary data into a string */
 SWIGINTERN char * SWIG_PackData(char *c, void *ptr, size_t sz) {
   static const char hex[17] = "0123456789abcdef";
-  register const unsigned char *u = (unsigned char *) ptr;
-  register const unsigned char *eu =  u + sz;
+  const unsigned char *u = (unsigned char *) ptr;
+  const unsigned char *eu =  u + sz;
   for (; u != eu; ++u) {
-    register unsigned char uu = *u;
+    unsigned char uu = *u;
     *(c++) = hex[(uu & 0xf0) >> 4];
     *(c++) = hex[uu & 0xf];
   }
@@ -49,11 +49,11 @@ SWIGINTERN char * SWIG_PackData(char *c, void *ptr, size_t sz) {
 %fragment("SWIG_UnPackData", "header") {
 /* Unpack binary data from a string */
 SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
-  register unsigned char *u = (unsigned char *) ptr;
-  register const unsigned char *eu = u + sz;
+  unsigned char *u = (unsigned char *) ptr;
+  const unsigned char *eu = u + sz;
   for (; u != eu; ++u) {
-    register char d = *(c++);
-    register unsigned char uu;
+    char d = *(c++);
+    unsigned char uu;
     if ((d >= '0') && (d <= '9'))
       uu = ((d - '0') << 4);
     else if ((d >= 'a') && (d <= 'f'))
@@ -203,7 +203,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(directorin) int                "$input = $1;"
 %typemap(directorin) unsigned int       "$input = $1;"
 %typemap(directorin) long               "$input = $1;"
-%typemap(directorin) unsigned long      "$input = $1;"
+%typemap(directorin) unsigned long      "$input = (unsigned long)$1;"
 %typemap(directorin) long long          "$input = $1;"
 %typemap(directorin) unsigned long long "$input = $1;"
 %typemap(directorin) float              "$input = $1;"
@@ -409,8 +409,8 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 #endif
 
 %typemap(directorin) SWIGTYPE 
-%{ $input = (void *)&$1; %}
-%typemap(csdirectorin) SWIGTYPE "new $&csclassname($iminput, false)"
+%{ $input = (void *)new $1_ltype((const $1_ltype &)$1); %}
+%typemap(csdirectorin) SWIGTYPE "new $&csclassname($iminput, true)"
 %typemap(csdirectorout) SWIGTYPE "$&csclassname.getCPtr($cscall).Handle"
 
 /* Generic pointers and references */
@@ -860,7 +860,8 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
     global::System.IntPtr ret = $imcall;$excode
     return ret;
   }
-
+%typemap(csdirectorin) void *VOID_INT_PTR "$iminput"
+%typemap(csdirectorout) void *VOID_INT_PTR "$cscall"
 
 /* Typemaps used for the generation of proxy and type wrapper class code */
 %typemap(csbase)                      SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE &&, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
@@ -994,6 +995,7 @@ SWIG_CSBODY_TYPEWRAPPER(internal, protected, internal, SWIGTYPE)
 #define %csmethodmodifiers          %feature("cs:methodmodifiers")
 #define %csnothrowexception         %feature("except")
 #define %csattributes               %feature("cs:attributes")
+#define %proxycode                  %insert("proxycode")
 
 %pragma(csharp) imclassclassmodifiers="class"
 %pragma(csharp) moduleclassmodifiers="public class"

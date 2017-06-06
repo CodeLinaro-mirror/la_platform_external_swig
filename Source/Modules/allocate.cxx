@@ -197,15 +197,17 @@ class Allocate:public Dispatcher {
 	      // Found a polymorphic method.
 	      // Mark the polymorphic method, in case the virtual keyword was not used.
 	      Setattr(n, "storage", "virtual");
-
-	      if (both_have_public_access || both_have_protected_access) {
-		if (!is_non_public_base(inclass, b))
-		  Setattr(n, "override", base);	// Note C# definition of override, ie access must be the same
-	      } else if (!both_have_private_access) {
-		// Different access
-		if (this_wrapping_protected_members || base_wrapping_protected_members)
+	      if (!Getattr(b, "feature:interface")) { // interface implementation neither hides nor overrides
+		if (both_have_public_access || both_have_protected_access) {
 		  if (!is_non_public_base(inclass, b))
-		    Setattr(n, "hides", base);	// Note C# definition of hiding, ie hidden if access is different
+		    Setattr(n, "override", base);	// Note C# definition of override, ie access must be the same
+		}
+		else if (!both_have_private_access) {
+		  // Different access
+		  if (this_wrapping_protected_members || base_wrapping_protected_members)
+		    if (!is_non_public_base(inclass, b))
+		      Setattr(n, "hides", base);	// Note C# definition of hiding, ie hidden if access is different
+		}
 	      }
 	      // Try and find the most base's covariant return type
 	      SwigType *most_base_covariant_type = Getattr(base, "covariant");
@@ -421,7 +423,7 @@ class Allocate:public Dispatcher {
 		while (cc) {
 		  Node *cp = cc;
 		  if (classname) {
-		    Setattr(cp, "classname", classname);
+		    Setattr(cp, "extendsmartclassname", classname);
 		  }
 		  Setattr(cp, "allocate:smartpointeraccess", "1");
 		  /* If constant, we have to be careful */
@@ -714,7 +716,7 @@ Allocate():
 
     /* Check if base classes allow smart pointers, but might be hidden */
     if (!Getattr(n, "allocate:smartpointer")) {
-      Node *sp = Swig_symbol_clookup((char *) "operator ->", 0);
+      Node *sp = Swig_symbol_clookup("operator ->", 0);
       if (sp) {
 	/* Look for parent */
 	Node *p = parentNode(sp);
@@ -728,6 +730,8 @@ Allocate():
 	}
       }
     }
+
+    Swig_interface_propagate_methods(n);
 
     /* Only care about default behavior.  Remove temporary values */
     Setattr(n, "allocate:visit", "1");
@@ -827,13 +831,13 @@ Allocate():
 		  }
 		  List *methods = smart_pointer_methods(sc, 0, isconst);
 		  Setattr(inclass, "allocate:smartpointer", methods);
-		  Setattr(inclass, "allocate:smartpointerbase", base);
+		  Setattr(inclass, "allocate:smartpointerpointeeclassname", Getattr(sc, "name"));
 		} else {
 		  /* Hmmm.  The return value is not a pointer.  If the type is a value
 		     or reference.  We're going to chase it to see if another operator->()
 		     can be found */
 		  if ((SwigType_check_decl(type, "")) || (SwigType_check_decl(type, "r."))) {
-		    Node *nn = Swig_symbol_clookup((char *) "operator ->", Getattr(sc, "symtab"));
+		    Node *nn = Swig_symbol_clookup("operator ->", Getattr(sc, "symtab"));
 		    if (nn) {
 		      Delete(base);
 		      Delete(type);
@@ -941,6 +945,8 @@ Allocate():
 	Setattr(inclass, "allocate:default_destructor", "1");
       } else if (cplus_mode == PROTECTED) {
 	Setattr(inclass, "allocate:default_base_destructor", "1");
+      } else if (cplus_mode == PRIVATE) {
+	Setattr(inclass, "allocate:private_destructor", "1");
       }
     } else {
       Setattr(inclass, "allocate:has_destructor", "1");

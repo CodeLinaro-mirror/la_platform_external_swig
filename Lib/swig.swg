@@ -297,6 +297,7 @@ static int NAME(TYPE x) {
 
 %define %$ismember       "match$ismember"="1"  %enddef
 %define %$isglobal       %$not %$ismember  %enddef
+%define %$isextendmember "match$isextendmember"="1"  %enddef
 %define %$innamespace    "match$parentNode$nodeType"="namespace"  %enddef
 
 %define %$ispublic       "match$access"="public"  %enddef
@@ -320,7 +321,7 @@ static int NAME(TYPE x) {
 
 /*
  * Function/method overloading support.   This is done through typemaps,
- * but also involve a precedence level. 
+ * but also involves a precedence level.
  */
 
 /* Macro for overload resolution */
@@ -358,6 +359,7 @@ static int NAME(TYPE x) {
 %define SWIG_TYPECHECK_STDSTRING    135    %enddef
 %define SWIG_TYPECHECK_STRING       140    %enddef
 %define SWIG_TYPECHECK_PAIR         150    %enddef
+%define SWIG_TYPECHECK_STDARRAY     155    %enddef
 %define SWIG_TYPECHECK_VECTOR       160    %enddef
 %define SWIG_TYPECHECK_DEQUE        170    %enddef
 %define SWIG_TYPECHECK_LIST         180    %enddef

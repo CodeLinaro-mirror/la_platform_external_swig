@@ -41,16 +41,6 @@
 
 
 /*
-  Use -DSWIG_DIRECTOR_STATIC if you prefer to avoid the use of the
-  'Swig' namespace. This could be useful for multi-modules projects.
-*/
-#ifdef SWIG_DIRECTOR_STATIC
-/* Force anonymous (static) namespace */
-#define Swig
-#endif
-
-
-/*
   Use -DSWIG_DIRECTOR_NORTTI if you prefer to avoid the use of the
   native C++ RTTI and dynamic_cast<>. But be aware that directors
   could stop working when using this option.
@@ -62,7 +52,6 @@
 */
 # ifndef SWIG_DIRECTOR_RTDIR
 # define SWIG_DIRECTOR_RTDIR
-#include <map>
 
 namespace Swig {
   class Director;
@@ -179,7 +168,7 @@ namespace Swig {
   public:
     DirectorException(PyObject *error, const char *hdr ="", const char *msg ="") : swig_msg(hdr) {
       SWIG_PYTHON_THREAD_BEGIN_BLOCK;
-      if (strlen(msg)) {
+      if (msg[0]) {
         swig_msg += " ";
         swig_msg += msg;
       }
@@ -339,9 +328,8 @@ namespace Swig {
     }
 
   public:
-    /* wrap a python object, optionally taking ownership */
+    /* wrap a python object. */
     Director(PyObject *self) : swig_self(self), swig_disown_flag(false) {
-      swig_incref();
     }
 
     /* discard our reference at destruction */

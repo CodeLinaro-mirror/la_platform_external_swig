@@ -12,29 +12,29 @@
 %inline %{
 #include <iostream>
 struct XXX {
-  XXX(int value) : value(value) {
-    if (debug) std::cout << "Default Constructor " << value << " " << this << std::endl;
+  XXX(int v) : value(v) {
+    if (debugging) std::cout << "Default Constructor " << value << " " << this << std::endl;
     count++;
   }
   XXX(const XXX &other) {
     value = other.value;
-    if (debug) std::cout << "Copy    Constructor " << value << " " << this << std::endl;
+    if (debugging) std::cout << "Copy    Constructor " << value << " " << this << std::endl;
     count++;
   }
   XXX& operator=(const XXX &other) {
     value = other.value;
-    if (debug) std::cout << "Assignment operator " << value << " " << this << std::endl;
+    if (debugging) std::cout << "Assignment operator " << value << " " << this << std::endl;
     return *this;
   }
   ~XXX() {
-    if (debug) std::cout << "Destructor          " << value << " " << this << std::endl;
+    if (debugging) std::cout << "Destructor          " << value << " " << this << std::endl;
     count--;
   }
   void showInfo() {
-    if (debug) std::cout << "Info                " << value << " " << this << std::endl;
+    if (debugging) std::cout << "Info                " << value << " " << this << std::endl;
   }
   int value;
-  static const bool debug = false;
+  static const bool debugging = false;
   static int count;
 };
 int XXX::count = 0;

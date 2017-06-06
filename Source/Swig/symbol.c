@@ -518,7 +518,6 @@ void Swig_symbol_inherit(Symtab *s) {
 
 void Swig_symbol_cadd(const_String_or_char_ptr name, Node *n) {
   Node *append = 0;
-
   Node *cn;
   /* There are a few options for weak symbols.  A "weak" symbol 
      is any symbol that can be replaced by another symbol in the C symbol
@@ -1149,7 +1148,7 @@ Node *Swig_symbol_clookup(const_String_or_char_ptr name, Symtab *n) {
     Symtab *un = Getattr(s, "sym:symtab");
     Node *ss = (!Equal(name, uname) || (un != n)) ? Swig_symbol_clookup(uname, un) : 0;	/* avoid infinity loop */
     if (!ss) {
-      Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(s), Getline(s), "Nothing known about '%s'.\n", Getattr(s, "uname"));
+      Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(s), Getline(s), "Nothing known about '%s'.\n", SwigType_namestr(Getattr(s, "uname")));
     }
     s = ss;
   }
@@ -1221,7 +1220,7 @@ Node *Swig_symbol_clookup_check(const_String_or_char_ptr name, Symtab *n, int (*
     Node *ss;
     ss = Swig_symbol_clookup(Getattr(s, "uname"), Getattr(s, "sym:symtab"));
     if (!ss && !checkfunc) {
-      Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(s), Getline(s), "Nothing known about '%s'.\n", Getattr(s, "uname"));
+      Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(s), Getline(s), "Nothing known about '%s'.\n", SwigType_namestr(Getattr(s, "uname")));
     }
     s = ss;
   }
@@ -1272,7 +1271,7 @@ Node *Swig_symbol_clookup_local(const_String_or_char_ptr name, Symtab *n) {
   while (s && Checkattr(s, "nodeType", "using")) {
     Node *ss = Swig_symbol_clookup_local(Getattr(s, "uname"), Getattr(s, "sym:symtab"));
     if (!ss) {
-      Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(s), Getline(s), "Nothing known about '%s'.\n", Getattr(s, "uname"));
+      Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(s), Getline(s), "Nothing known about '%s'.\n", SwigType_namestr(Getattr(s, "uname")));
     }
     s = ss;
   }
@@ -1320,7 +1319,7 @@ Node *Swig_symbol_clookup_local_check(const_String_or_char_ptr name, Symtab *n, 
   while (s && Checkattr(s, "nodeType", "using")) {
     Node *ss = Swig_symbol_clookup_local_check(Getattr(s, "uname"), Getattr(s, "sym:symtab"), checkfunc);
     if (!ss && !checkfunc) {
-      Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(s), Getline(s), "Nothing known about '%s'.\n", Getattr(s, "uname"));
+      Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(s), Getline(s), "Nothing known about '%s'.\n", SwigType_namestr(Getattr(s, "uname")));
     }
     s = ss;
   }
@@ -1875,15 +1874,15 @@ ParmList *Swig_symbol_template_defargs(Parm *parms, Parm *targs, Symtab *tscope,
 	  Delete(ntq);
 	  ntq = ty;
 	}
-	/* Printf(stderr,"value %s %s %s\n",value,ntr,ntq); */
 	cp = NewParmWithoutFileLineInfo(ntq, 0);
-        if (lp)
-          set_nextSibling(lp, cp);
-        else
-          expandedparms = CopyParm(cp);
+	if (lp) {
+	  set_nextSibling(lp, cp);
+	  Delete(cp);
+	} else {
+	  expandedparms = cp;
+	}
 	lp = cp;
 	tp = nextSibling(tp);
-	Delete(cp);
 	Delete(nt);
 	Delete(ntq);
       } else {
@@ -1907,19 +1906,37 @@ SwigType *Swig_symbol_template_deftype(const SwigType *type, Symtab *tscope) {
   int len = Len(elements);
   int i;
 #ifdef SWIG_TEMPLATE_DEFTYPE_CACHE
-  static Hash *deftype_cache = 0;
-  String *scopetype = tscope ? NewStringf("%s::%s", Getattr(tscope, "name"), type)
+  static Hash *s_cache = 0;
+  Hash *scope_cache;
+  /* The lookup depends on the current scope and potential namespace qualification.
+     Looking up x in namespace y is not the same as looking up x::y in outer scope.
+     -> we use a 2-level hash: first scope and then symbol. */
+  String *scope_name = tscope
+      ? Swig_symbol_qualifiedscopename(tscope)
+      : Swig_symbol_qualifiedscopename(current_symtab);
+  String *type_name = tscope
+      ? NewStringf("%s::%s", Getattr(tscope, "name"), type)
       : NewStringf("%s::%s", Swig_symbol_getscopename(), type);
-  if (!deftype_cache) {
-    deftype_cache = NewHash();
+  if (!scope_name) scope_name = NewString("::");
+  if (!s_cache) {
+    s_cache = NewHash();
   }
-  if (scopetype) {
-    String *cres = Getattr(deftype_cache, scopetype);
+  scope_cache = Getattr(s_cache, scope_name);
+  if (scope_cache) {
+    String *cres = Getattr(scope_cache, type_name);
     if (cres) {
       Append(result, cres);
-      Delete(scopetype);
+#ifdef SWIG_DEBUG
+      Printf(stderr, "cached deftype %s(%s) -> %s\n", type, scope_name, result);
+#endif
+      Delete(type_name);
+      Delete(scope_name);
       return result;
     }
+  } else {
+      scope_cache = NewHash();
+      Setattr(s_cache, scope_name, scope_cache);
+      Delete(scope_name);
   }
 #endif
 
@@ -2019,8 +2036,8 @@ SwigType *Swig_symbol_template_deftype(const SwigType *type, Symtab *tscope) {
   }
   Delete(elements);
 #ifdef SWIG_TEMPLATE_DEFTYPE_CACHE
-  Setattr(deftype_cache, scopetype, result);
-  Delete(scopetype);
+  Setattr(scope_cache, type_name, result);
+  Delete(type_name);
 #endif
 
   return result;

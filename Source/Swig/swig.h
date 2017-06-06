@@ -283,13 +283,11 @@ extern int        ParmList_is_compactdefargs(ParmList *p);
 
   extern void Swig_naming_init(void);
   extern void Swig_name_namewarn_add(String *prefix, String *name, SwigType *decl, Hash *namewrn);
-  extern Hash *Swig_name_namewarn_get(Node *n, String *prefix, String *name, SwigType *decl);
   extern void Swig_name_rename_add(String *prefix, String *name, SwigType *decl, Hash *namewrn, ParmList *declaratorparms);
   extern void Swig_name_inherit(String *base, String *derived);
   extern List *Swig_make_inherit_list(String *clsname, List *names, String *Namespaceprefix);
   extern void Swig_inherit_base_symbols(List *bases);
   extern int Swig_need_protected(Node *n);
-  extern int Swig_need_name_warning(Node *n);
   extern int Swig_need_redefined_warn(Node *a, Node *b, int InClass);
 
   extern String *Swig_name_make(Node *n, String *prefix, const_String_or_char_ptr cname, SwigType *decl, String *oldname);
@@ -374,7 +372,7 @@ extern int        ParmList_is_compactdefargs(ParmList *p);
 /* --- Transformations --- */
 
   extern int Swig_MethodToFunction(Node *n, const_String_or_char_ptr nspace, String *classname, int flags, SwigType *director_type, int is_director);
-  extern int Swig_ConstructorToFunction(Node *n, const_String_or_char_ptr nspace, String *classname, String *none_comparison, String *director_ctor, int cplus, int flags);
+  extern int Swig_ConstructorToFunction(Node *n, const_String_or_char_ptr nspace, String *classname, String *none_comparison, String *director_ctor, int cplus, int flags, String *directorname);
   extern int Swig_DestructorToFunction(Node *n, const_String_or_char_ptr nspace, String *classname, int cplus, int flags);
   extern int Swig_MembersetToFunction(Node *n, String *classname, int flags);
   extern int Swig_MembergetToFunction(Node *n, String *classname, int flags);
@@ -402,6 +400,7 @@ extern int        ParmList_is_compactdefargs(ParmList *p);
   extern void Swig_typemap_clear(const_String_or_char_ptr tmap_method, ParmList *pattern);
   extern int Swig_typemap_apply(ParmList *srcpat, ParmList *destpat);
   extern void Swig_typemap_clear_apply(ParmList *pattern);
+  extern void Swig_typemap_replace_embedded_typemap(String *s, Node *file_line_node);
   extern void Swig_typemap_debug(void);
   extern void Swig_typemap_search_debug_set(void);
   extern void Swig_typemap_used_debug_set(void);
@@ -409,8 +408,6 @@ extern int        ParmList_is_compactdefargs(ParmList *p);
 
   extern String *Swig_typemap_lookup(const_String_or_char_ptr tmap_method, Node *n, const_String_or_char_ptr lname, Wrapper *f);
   extern String *Swig_typemap_lookup_out(const_String_or_char_ptr tmap_method, Node *n, const_String_or_char_ptr lname, Wrapper *f, String *actioncode);
-  extern void Swig_typemap_new_scope(void);
-  extern Hash *Swig_typemap_pop_scope(void);
 
   extern void Swig_typemap_attach_parms(const_String_or_char_ptr tmap_method, ParmList *parms, Wrapper *f);
 
@@ -419,6 +416,13 @@ extern int        ParmList_is_compactdefargs(ParmList *p);
   extern void Swig_fragment_register(Node *fragment);
   extern void Swig_fragment_emit(String *name);
   extern void Swig_fragment_clear(String *section);
+
+/* --- Extension support --- */
+
+  extern Hash *Swig_extend_hash(void);
+  extern void Swig_extend_merge(Node *cls, Node *am);
+  extern void Swig_extend_append_previous(Node *cls, Node *am);
+  extern void Swig_extend_unused_check(void);
 
 /* hacks defined in C++ ! */
   extern int Swig_director_mode(void);

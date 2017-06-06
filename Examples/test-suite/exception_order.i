@@ -23,7 +23,17 @@
    user's throw declarations.
 */
 
-#if defined(SWIGUTL)
+#if defined(SWIGOCTAVE)
+%exception {
+  try {
+    $action
+  }
+  SWIG_RETHROW_OCTAVE_EXCEPTIONS
+  catch(...) {
+    SWIG_exception(SWIG_RuntimeError,"postcatch unknown");
+  }
+}
+#elif defined(SWIGUTL)
 %exception {
   try {
     $action
@@ -125,6 +135,13 @@
     }
   };
   int A::sfoovar = 1;
+
+#ifdef SWIGPYTHON_BUILTIN
+bool is_python_builtin() { return true; }
+#else
+bool is_python_builtin() { return false; }
+#endif
+
 %}
 
 %template(ET_i) ET<int>;
