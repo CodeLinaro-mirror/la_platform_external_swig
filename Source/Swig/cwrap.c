@@ -277,7 +277,7 @@ int Swig_cargs(Wrapper *w, ParmList *p) {
 	  SwigType_del_rvalue_reference(tvalue);
 	  tycode = SwigType_type(tvalue);
 	  if (tycode != T_USER) {
-	    /* plain primitive type, we copy the the def value */
+	    /* plain primitive type, we copy the def value */
 	    String *lstr = SwigType_lstr(tvalue, defname);
 	    defvalue = NewStringf("%s = %s", lstr, qvalue);
 	    Delete(lstr);
@@ -467,7 +467,7 @@ static String *Swig_cmethod_call(const_String_or_char_ptr name, ParmList *parms,
     return func;
 
   if (!self)
-    self = (char *) "(this)->";
+    self = "(this)->";
   Append(func, self);
 
   if (SwigType_istemplate(name) && (strncmp(Char(name), "operator ", 9) == 0)) {
@@ -869,7 +869,7 @@ void Swig_replace_special_variables(Node *n, Node *parentnode, String *code) {
     String *parentclassname = 0;
     if (parentclass)
       parentclassname = Getattr(parentclass, "name");
-    Replaceall(code, "$parentclassname", parentclassname ? parentclassname : "");
+    Replaceall(code, "$parentclassname", parentclassname ? SwigType_str(parentclassname, "") : "");
   }
 }
 
@@ -941,7 +941,7 @@ int Swig_MethodToFunction(Node *n, const_String_or_char_ptr nspace, String *clas
         is_smart_pointer_overload = 1;
       }
       else if (Swig_storage_isstatic(n)) {
-	String *cname = Getattr(n, "classname") ? Getattr(n, "classname") : classname;
+	String *cname = Getattr(n, "extendsmartclassname") ? Getattr(n, "extendsmartclassname") : classname;
 	String *ctname = SwigType_namestr(cname);
         self = NewStringf("(*(%s const *)this)->", ctname);
         is_smart_pointer_overload = 1;
@@ -1024,6 +1024,15 @@ int Swig_MethodToFunction(Node *n, const_String_or_char_ptr nspace, String *clas
       }
     }
 
+    if (!self && SwigType_isrvalue_reference(Getattr(n, "refqualifier"))) {
+      String *memory_header = NewString("<memory>");
+      Setfile(memory_header, Getfile(n));
+      Setline(memory_header, Getline(n));
+      Swig_fragment_emit(memory_header);
+      self = NewString("std::move(*this).");
+      Delete(memory_header);
+    }
+
     call = Swig_cmethod_call(explicitcall_name ? explicitcall_name : name, p, self, explicit_qualifier, director_type);
     cres = Swig_cresult(Getattr(n, "type"), Swig_cresult_name(), call);
 
@@ -1058,7 +1067,7 @@ int Swig_MethodToFunction(Node *n, const_String_or_char_ptr nspace, String *clas
 
     String *defaultargs = Getattr(n, "defaultargs");
     String *code = Getattr(n, "code");
-    String *cname = Getattr(n, "classname") ? Getattr(n, "classname") : classname;
+    String *cname = Getattr(n, "extendsmartclassname") ? Getattr(n, "extendsmartclassname") : classname;
     String *membername = Swig_name_member(nspace, cname, name);
     String *mangled = Swig_name_mangle(membername);
     int is_smart_pointer = flags & CWRAP_SMART_POINTER;
@@ -1181,23 +1190,14 @@ Node *Swig_directormap(Node *module, String *type) {
  * This function creates a C wrapper for a C constructor function. 
  * ----------------------------------------------------------------------------- */
 
-int Swig_ConstructorToFunction(Node *n, const_String_or_char_ptr nspace, String *classname, String *none_comparison, String *director_ctor, int cplus, int flags) {
-  ParmList *parms;
-  Parm *prefix_args;
+int Swig_ConstructorToFunction(Node *n, const_String_or_char_ptr nspace, String *classname, String *none_comparison, String *director_ctor, int cplus, int flags, String *directorname) {
   Parm *p;
   ParmList *directorparms;
   SwigType *type;
-  int use_director;
-  String *directorScope = NewString(nspace);
- 
-  Replace(directorScope, NSPACE_SEPARATOR, "_", DOH_REPLACE_ANY);
-
-  use_director = Swig_directorclass(n);
-
-  parms = CopyParmList(nonvoid_parms(Getattr(n, "parms")));
-
+  int use_director = Swig_directorclass(n);
+  ParmList *parms = CopyParmList(nonvoid_parms(Getattr(n, "parms")));
   /* Prepend the list of prefix_args (if any) */
-  prefix_args = Getattr(n, "director:prefix_args");
+  Parm *prefix_args = Getattr(n, "director:prefix_args");
   if (prefix_args != NIL) {
     Parm *p2, *p3;
 
@@ -1250,17 +1250,10 @@ int Swig_ConstructorToFunction(Node *n, const_String_or_char_ptr nspace, String 
       if (use_director) {
 	Node *parent = Swig_methodclass(n);
 	int abstract = Getattr(parent, "abstracts") != 0;
-	String *name = Getattr(parent, "sym:name");
-	String *directorname;
 	String *action = NewStringEmpty();
 	String *tmp_none_comparison = Copy(none_comparison);
 	String *director_call;
 	String *nodirector_call;
-
-        if (Len(directorScope) > 0)
-          directorname = NewStringf("SwigDirector_%s_%s", directorScope, name);
-        else 
-          directorname = NewStringf("SwigDirector_%s", name);
 
 	Replaceall(tmp_none_comparison, "$arg", "arg1");
 
@@ -1300,7 +1293,6 @@ int Swig_ConstructorToFunction(Node *n, const_String_or_char_ptr nspace, String 
 	Setattr(n, "wrap:action", action);
 	Delete(tmp_none_comparison);
 	Delete(action);
-	Delete(directorname);
       } else {
 	String *call = Swig_cppconstructor_call(classname, parms);
 	String *cres = Swig_cresult(type, Swig_cresult_name(), call);
@@ -1322,7 +1314,6 @@ int Swig_ConstructorToFunction(Node *n, const_String_or_char_ptr nspace, String 
   if (directorparms != parms)
     Delete(directorparms);
   Delete(parms);
-  Delete(directorScope);
   return SWIG_OK;
 }
 
@@ -1632,7 +1623,14 @@ int Swig_VargetToFunction(Node *n, int flags) {
     Delete(mangled);
     Delete(sname);
   } else {
-    String *nname = SwigType_namestr(name);
+    String *nname = 0;
+    if (Equal(nodeType(n), "constant")) {
+      String *rawval = Getattr(n, "rawval");
+      String *value = rawval ? rawval : Getattr(n, "value");
+      nname = NewStringf("(%s)", value);
+    } else {
+      nname = SwigType_namestr(name);
+    }
     call = Swig_wrapped_var_assign(type, nname, varcref);
     cres = Swig_cresult(ty, Swig_cresult_name(), call);
     Setattr(n, "wrap:action", cres);

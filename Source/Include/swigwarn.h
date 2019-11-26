@@ -18,6 +18,8 @@
  * Even though symbolic constants are used in the SWIG source, this is
  * not always the case in SWIG interface files.  Do not change the
  * numbers in this file.
+ *
+ * This file is used as the input for generating Lib/swigwarn.swg.
  * ----------------------------------------------------------------------------- */
 
 #ifndef SWIGWARN_H_
@@ -93,8 +95,8 @@
 #define WARN_PARSE_EXTEND_NAME        326
 
 #define WARN_CPP11_LAMBDA             340
-#define WARN_CPP11_ALIAS_DECLARATION  341
-#define WARN_CPP11_ALIAS_TEMPLATE     342
+#define WARN_CPP11_ALIAS_DECLARATION  341  /* redundant now */
+#define WARN_CPP11_ALIAS_TEMPLATE     342  /* redundant now */
 #define WARN_CPP11_VARIADIC_TEMPLATE  343
 
 #define WARN_IGNORE_OPERATOR_NEW        350	/* new */
@@ -153,6 +155,7 @@
 #define WARN_TYPE_INCOMPLETE          402
 #define WARN_TYPE_ABSTRACT            403
 #define WARN_TYPE_REDEFINED           404
+#define WARN_TYPE_RVALUE_REF_QUALIFIER_IGNORED 405
 
 #define WARN_TYPEMAP_SOURCETARGET     450
 #define WARN_TYPEMAP_CHARLEAK         451
@@ -207,6 +210,18 @@
 #define WARN_LANG_ILLEGAL_DESTRUCTOR  521
 #define WARN_LANG_EXTEND_CONSTRUCTOR  522
 #define WARN_LANG_EXTEND_DESTRUCTOR   523
+#define WARN_LANG_EXPERIMENTAL        524
+#define WARN_LANG_DIRECTOR_FINAL      525
+
+/* -- Doxygen comments -- */
+
+#define WARN_DOXYGEN_UNKNOWN_COMMAND          560
+#define WARN_DOXYGEN_UNEXPECTED_END_OF_COMMENT  561
+#define WARN_DOXYGEN_COMMAND_EXPECTED         562
+#define WARN_DOXYGEN_HTML_ERROR               563
+#define WARN_DOXYGEN_COMMAND_ERROR            564
+#define WARN_DOXYGEN_UNKNOWN_CHARACTER        565
+#define WARN_DOXYGEN_UNEXPECTED_ITERATOR_VALUE  566
 
 /* -- Reserved (600-799) -- */
 
@@ -215,9 +230,9 @@
 /* Feel free to claim any number in this space that's not currently being used. Just make sure you
    add an entry here */
 
-#define WARN_D_TYPEMAP_CTYPE_UNDEF           700
+#define WARN_D_TYPEMAP_CTYPE_UNDEF            700
 #define WARN_D_TYPEMAP_IMTYPE_UNDEF           701
-#define WARN_D_TYPEMAP_DTYPE_UNDEF           702
+#define WARN_D_TYPEMAP_DTYPE_UNDEF            702
 #define WARN_D_MULTIPLE_INHERITANCE           703
 #define WARN_D_TYPEMAP_CLASSMOD_UNDEF         704
 #define WARN_D_TYPEMAP_DBODY_UNDEF            705
@@ -231,6 +246,14 @@
 #define WARN_D_NAME_COLLISION                 713
 
 /* please leave 700-719 free for D */
+
+#define WARN_SCILAB_TRUNCATED_NAME            720
+
+/* please leave 720-739 free for Scilab */
+
+#define WARN_PYTHON_INDENT_MISMATCH           740
+
+/* please leave 740-759 free for Python */
 
 #define WARN_RUBY_WRONG_NAME                  801
 #define WARN_RUBY_MULTIPLE_INHERITANCE        802
@@ -248,6 +271,7 @@
 #define WARN_JAVA_TYPEMAP_JAVAIN_UNDEF        818
 #define WARN_JAVA_TYPEMAP_JAVADIRECTORIN_UNDEF    819
 #define WARN_JAVA_TYPEMAP_JAVADIRECTOROUT_UNDEF   820
+#define WARN_JAVA_TYPEMAP_INTERFACECODE_UNDEF 821
 #define WARN_JAVA_COVARIANT_RET               822
 #define WARN_JAVA_TYPEMAP_JAVACONSTRUCT_UNDEF 823
 #define WARN_JAVA_TYPEMAP_DIRECTORIN_NODESC   824
@@ -267,6 +291,7 @@
 #define WARN_CSHARP_TYPEMAP_CSIN_UNDEF        838
 #define WARN_CSHARP_TYPEMAP_CSDIRECTORIN_UNDEF    839
 #define WARN_CSHARP_TYPEMAP_CSDIRECTOROUT_UNDEF   840
+#define WARN_CSHARP_TYPEMAP_INTERFACECODE_UNDEF   841
 #define WARN_CSHARP_COVARIANT_RET             842
 #define WARN_CSHARP_TYPEMAP_CSCONSTRUCT_UNDEF 843
 #define WARN_CSHARP_EXCODE                    844

@@ -29,8 +29,9 @@ namespace Swig {
     virtual ~GCItem() {
     }
 
-    virtual ruby_owntype get_own() const {
-      return 0;
+    virtual swig_ruby_owntype get_own() const {
+      swig_ruby_owntype own = {0, 0};
+      return own;
     }
   };
 
@@ -72,18 +73,18 @@ namespace Swig {
   };
 
   struct GCItem_Object : GCItem {
-    GCItem_Object(ruby_owntype own) : _own(own) {
+    GCItem_Object(swig_ruby_owntype own) : _own(own) {
     }
 
     virtual ~GCItem_Object() {
     }
 
-    ruby_owntype get_own() const {
+    swig_ruby_owntype get_own() const {
       return _own;
     }
 
   private:
-    ruby_owntype _own;
+    swig_ruby_owntype _own;
   };
 
   template <typename Type>
@@ -118,7 +119,7 @@ namespace Swig {
     }
 
     DirectorException(VALUE error, const char *hdr, const char *msg ="") : swig_error(error), swig_msg(hdr) {
-      if (strlen(msg)) {
+      if (msg[0]) {
 	swig_msg += " ";
 	swig_msg += msg;
       }
@@ -151,43 +152,6 @@ namespace Swig {
       return swig_msg.c_str();
     }
   };
-
-  /* unknown exception handler  */
-  class UnknownExceptionHandler {
-#ifdef SWIG_DIRECTOR_UEH
-    static void handler() {
-      try {
-	throw;
-      } catch (DirectorException& e) {
-	std::cerr << "SWIG Director exception caught:" << std::endl
-		  << e.what() << std::endl;
-      } catch (std::exception& e) {
-	std::cerr << "std::exception caught: "<< e.what() << std::endl;
-      } catch (...) {
-	std::cerr << "Unknown exception caught." << std::endl;
-      }
-      std::cerr << std::endl
-		<< "Ruby interpreter traceback:" << std::endl;
-      std::cerr << std::endl;
-      std::cerr << "This exception was caught by the SWIG unexpected exception handler." << std::endl
-		<< "Try using %feature(\"director:except\") to avoid reaching this point." << std::endl
-		<< std::endl
-		<< "Exception is being re-thrown, program will like abort/terminate." << std::endl;
-      throw;
-    }
-
-  public:
-    std::unexpected_handler old;
-    UnknownExceptionHandler(std::unexpected_handler nh = handler) {
-      old = std::set_unexpected(nh);
-    }
-
-    ~UnknownExceptionHandler() {
-      std::set_unexpected(old);
-    }
-#endif
-  };
-
 
   /* Type mismatch in the return value from a Ruby method call */
   class DirectorTypeMismatchException : public DirectorException {
@@ -278,7 +242,7 @@ namespace Swig {
     mutable bool swig_disown_flag;
 
   public:
-    /* wrap a Ruby object, optionally taking ownership */
+    /* wrap a Ruby object. */
     Director(VALUE self) : swig_self(self), swig_disown_flag(false) {
     }
 
@@ -323,20 +287,20 @@ namespace Swig {
       }
     }
 
-    void swig_acquire_ownership_obj(void *vptr, ruby_owntype own) const {
-      if (vptr && own) {
+    void swig_acquire_ownership_obj(void *vptr, swig_ruby_owntype own) const {
+      if (vptr && own.datafree) {
 	SWIG_GUARD(swig_mutex_own);
 	swig_owner[vptr] = new GCItem_Object(own);
       }
     }
 
-    ruby_owntype swig_release_ownership(void *vptr) const {
-      ruby_owntype own = 0;
+    swig_ruby_owntype swig_release_ownership(void *vptr) const {
+      swig_ruby_owntype own = {0, 0};
       if (vptr) {
 	SWIG_GUARD(swig_mutex_own);
 	swig_ownership_map::iterator iter = swig_owner.find(vptr);
 	if (iter != swig_owner.end()) {
-	  own = iter->second->get_own();
+	  own.datafree = iter->second->get_own().datafree;
 	  swig_owner.erase(iter);
 	}
       }

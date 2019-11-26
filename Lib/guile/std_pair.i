@@ -79,7 +79,7 @@ namespace std {
                 }
             } else {
                 /* wrapped pair? */
-                std::pair<T,U >* m;
+                std::pair< T, U >* m;
                 if (SWIG_ConvertPtr($input,(void **) &m,
                                     $&1_descriptor, 0) == 0)
                     $1 = 1;
@@ -105,7 +105,7 @@ namespace std {
                 }
             } else {
                 /* wrapped pair? */
-                std::pair<T,U >* m;
+                std::pair< T, U >* m;
                 if (SWIG_ConvertPtr($input,(void **) &m,
                                     $1_descriptor, 0) == 0)
                     $1 = 1;
@@ -113,11 +113,15 @@ namespace std {
                     $1 = 0;
             }
         }
+
+        typedef T first_type;
+        typedef U second_type;
+
         pair();
         pair(T first, U second);
-        pair(const pair& p);
+        pair(const pair& other);
 
-        template <class U1, class U2> pair(const pair<U1, U2> &p);
+        template <class U1, class U2> pair(const pair<U1, U2> &other);
 
         T first;
         U second;
@@ -183,7 +187,7 @@ namespace std {
                 }
             } else {
                 /* wrapped pair? */
-                std::pair<T,U >* m;
+                std::pair< T, U >* m;
                 if (SWIG_ConvertPtr($input,(void **) &m,
                                     $&1_descriptor, 0) == 0)
                     $1 = 1;
@@ -207,7 +211,7 @@ namespace std {
                 }
             } else {
                 /* wrapped pair? */
-                std::pair<T,U >* m;
+                std::pair< T, U >* m;
                 if (SWIG_ConvertPtr($input,(void **) &m,
                                     $1_descriptor, 0) == 0)
                     $1 = 1;
@@ -217,9 +221,9 @@ namespace std {
         }
         pair();
         pair(T first, U second);
-        pair(const pair& p);
+        pair(const pair& other);
 
-        template <class U1, class U2> pair(const pair<U1, U2> &p);
+        template <class U1, class U2> pair(const pair<U1, U2> &other);
 
         T first;
         U second;
@@ -283,7 +287,7 @@ namespace std {
                 }
             } else {
                 /* wrapped pair? */
-                std::pair<T,U >* m;
+                std::pair< T, U >* m;
                 if (SWIG_ConvertPtr($input,(void **) &m,
                                     $&1_descriptor, 0) == 0)
                     $1 = 1;
@@ -307,7 +311,7 @@ namespace std {
                 }
             } else {
                 /* wrapped pair? */
-                std::pair<T,U >* m;
+                std::pair< T, U >* m;
                 if (SWIG_ConvertPtr($input,(void **) &m,
                                     $1_descriptor, 0) == 0)
                     $1 = 1;
@@ -317,9 +321,9 @@ namespace std {
         }
         pair();
         pair(T first, U second);
-        pair(const pair& p);
+        pair(const pair& other);
 
-        template <class U1, class U2> pair(const pair<U1, U2> &p);
+        template <class U1, class U2> pair(const pair<U1, U2> &other);
 
         T first;
         U second;
@@ -377,7 +381,7 @@ namespace std {
                 }
             } else {
                 /* wrapped pair? */
-                std::pair<T,U >* m;
+                std::pair< T, U >* m;
                 if (SWIG_ConvertPtr($input,(void **) &m,
                                     $&1_descriptor, 0) == 0)
                     $1 = 1;
@@ -398,7 +402,7 @@ namespace std {
                 }
             } else {
                 /* wrapped pair? */
-                std::pair<T,U >* m;
+                std::pair< T, U >* m;
                 if (SWIG_ConvertPtr($input,(void **) &m,
                                     $1_descriptor, 0) == 0)
                     $1 = 1;
@@ -408,9 +412,9 @@ namespace std {
         }
         pair();
         pair(T first, U second);
-        pair(const pair& p);
+        pair(const pair& other);
 
-        template <class U1, class U2> pair(const pair<U1, U2> &p);
+        template <class U1, class U2> pair(const pair<U1, U2> &other);
 
         T first;
         U second;

@@ -104,6 +104,47 @@ CSHARP_ARRAYS(unsigned long long, ulong)
 CSHARP_ARRAYS(float, float)
 CSHARP_ARRAYS(double, double)
 
+// By default C# will marshal bools as 4 bytes
+// UnmanagedType.I1 will change this to 1 byte
+// FIXME - When running on mono ArraySubType appears to be ignored and bools will be marshalled as 4-byte
+// https://github.com/mono/mono/issues/15592
+
+// input only arrays
+%typemap(ctype)   bool INPUT[] "bool*"
+%typemap(cstype)  bool INPUT[] "bool[]"
+%typemap(imtype, inattributes="[global::System.Runtime.InteropServices.In, global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPArray,ArraySubType=System.Runtime.InteropServices.UnmanagedType.I1)]") bool INPUT[] "bool[]"
+%typemap(csin)    bool INPUT[] "$csinput"
+
+%typemap(in)      bool INPUT[] %{
+$1 = $input;
+%}
+%typemap(freearg) bool INPUT[] ""
+%typemap(argout)  bool INPUT[] ""
+
+// output only arrays
+%typemap(ctype)   bool OUTPUT[] "bool*"
+%typemap(cstype)  bool OUTPUT[] "bool[]"
+%typemap(imtype, inattributes="[global::System.Runtime.InteropServices.Out, global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPArray,ArraySubType=System.Runtime.InteropServices.UnmanagedType.I1)]") bool OUTPUT[] "bool[]"
+%typemap(csin)    bool OUTPUT[] "$csinput"
+
+%typemap(in)      bool OUTPUT[] %{
+$1 = $input;
+%}
+%typemap(freearg) bool OUTPUT[] ""
+%typemap(argout)  bool OUTPUT[] ""
+
+// inout arrays
+%typemap(ctype)   bool INOUT[] "bool*"
+%typemap(cstype)  bool INOUT[] "bool[]"
+%typemap(imtype, inattributes="[global::System.Runtime.InteropServices.In, global::System.Runtime.InteropServices.Out, global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPArray,ArraySubType=System.Runtime.InteropServices.UnmanagedType.I1)]") bool INOUT[] "bool[]"
+%typemap(csin)    bool INOUT[] "$csinput"
+
+%typemap(in)      bool INOUT[] %{
+$1 = $input;
+%}
+%typemap(freearg) bool INOUT[] ""
+%typemap(argout)  bool INOUT[] ""
+
 
 %define CSHARP_ARRAYS_FIXED( CTYPE, CSTYPE )
 
@@ -134,4 +175,5 @@ CSHARP_ARRAYS_FIXED(long long, long)
 CSHARP_ARRAYS_FIXED(unsigned long long, ulong)
 CSHARP_ARRAYS_FIXED(float, float)
 CSHARP_ARRAYS_FIXED(double, double)
+CSHARP_ARRAYS_FIXED(bool, bool)
 

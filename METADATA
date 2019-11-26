@@ -1,0 +1,18 @@
+name: "swig"
+description: "SWIG is a software development tool that connects programs written in C and C++ with a variety of high-level programming languages."
+third_party {
+  url {
+    type: HOMEPAGE
+    value: "http://www.swig.org/"
+  }
+  url {
+    type: GIT
+    value: "https://github.com/swig/swig.git"
+  }
+  version: "rel-4.0.1"
+  last_upgrade_date {
+    year: 2019
+    month: 10
+    day: 18
+  }
+}

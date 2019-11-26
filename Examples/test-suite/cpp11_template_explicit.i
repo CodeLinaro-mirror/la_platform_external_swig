@@ -7,7 +7,11 @@
 #pragma SWIG nowarn=SWIGWARN_PARSE_EXPLICIT_TEMPLATE
 
 %inline %{
-#include <vector>
+
+template<typename T> class Temper {
+public:
+  T val;
+};
 
 class A {
 public:
@@ -15,10 +19,20 @@ public:
   int memberFunction() { return 100; }
 };
 
-template class std::vector<A>;
-extern template class std::vector<A>;
+class B {
+public:
+  short member;
+  short memberFunction() { return 100; }
+};
 
-template class std::vector<A*>;
-extern template class std::vector<A*>;
+template class Temper<A>;
+extern template class Temper<B>;
+
+template class Temper<A*>;
+extern template class Temper<B*>;
+
+template class Temper<int>;
+extern template class Temper<short>;
 %}
 
+%template(TemperInt) Temper<int>;

@@ -18,12 +18,6 @@
 #include "preprocessor.h"
 #include "swigwarn.h"
 
-#if !defined(HAVE_BOOL)
-typedef int bool;
-#define true ((bool)1)
-#define false ((bool)0)
-#endif
-
 #define NOT_VIRTUAL     0
 #define PLAIN_VIRTUAL   1
 #define PURE_VIRTUAL    2
@@ -214,10 +208,14 @@ public:
   /* Miscellaneous */
   virtual int validIdentifier(String *s);	/* valid identifier? */
   virtual int addSymbol(const String *s, const Node *n, const_String_or_char_ptr scope = "");	/* Add symbol        */
+  virtual int addInterfaceSymbol(const String *interface_name, Node *n, const_String_or_char_ptr scope = "");
   virtual void dumpSymbols();
-  virtual Node *symbolLookup(String *s, const_String_or_char_ptr scope = "");			/* Symbol lookup     */
-  virtual Node *classLookup(const SwigType *s) const; /* Class lookup      */
-  virtual Node *enumLookup(SwigType *s);	/* Enum lookup       */
+  virtual Node *symbolLookup(const String *s, const_String_or_char_ptr scope = ""); /* Symbol lookup */
+  virtual Hash* symbolAddScope(const_String_or_char_ptr scope);
+  virtual Hash* symbolScopeLookup(const_String_or_char_ptr scope);
+  virtual Hash* symbolScopePseudoSymbolLookup(const_String_or_char_ptr scope);
+  static Node *classLookup(const SwigType *s); /* Class lookup      */
+  static Node *enumLookup(SwigType *s);	/* Enum lookup       */
   virtual int abstractClassTest(Node *n);	/* Is class really abstract? */
   virtual int is_assignable(Node *n);	/* Is variable assignable? */
   virtual String *runtimeCode();	/* returns the language specific runtime code */
@@ -288,11 +286,17 @@ protected:
   /* Return the current class prefix */
   String *getClassPrefix() const;
 
+  /* Return the current enum class prefix */
+  String *getEnumClassPrefix() const;
+
   /* Fully qualified type name to use */
   String *getClassType() const;
 
   /* Return true if the current method is part of a smart-pointer */
   int is_smart_pointer() const;
+
+  /* Return the name to use for the given parameter. */
+  virtual String *makeParameterName(Node *n, Parm *p, int arg_num, bool setter = false) const;
 
   /* Some language modules require additional wrappers for virtual methods not declared in sub-classes */
   virtual bool extraDirectorProtectedCPPMethodsRequired() const;
@@ -311,6 +315,9 @@ public:
     the nested classes will be moved to the global scope (like implicit global %feature "flatnested").
   */
   virtual NestedClassSupport nestedClassesSupport() const;
+
+  /* Returns true if the target language supports key word arguments (kwargs) */
+  virtual bool kwargsSupport() const;
 
 protected:
   /* Identifies if a protected members that are generated when the allprotected option is used.
@@ -335,10 +342,11 @@ protected:
   /* Director language module */
   int director_language;
 
+  /* Used to translate Doxygen comments to target documentation format */
+  class DoxygenTranslator *doxygenTranslator;
+
 private:
   Hash *symtabs; /* symbol tables */
-  Hash *classtypes;
-  Hash *enumtypes;
   int overloading;
   int multiinput;
   int cplus_runtime;
@@ -346,10 +354,23 @@ private:
   static Language *this_;
 };
 
-int SWIG_main(int, char **, Language *);
+extern "C" {
+  void SWIG_typemap_lang(const char *);
+  typedef Language *(*ModuleFactory) (void);
+}
+
+enum Status {Disabled, Experimental, Supported};
+
+struct TargetLanguageModule {
+  const char *name;
+  ModuleFactory fac;
+  const char *help;
+  Status status;
+};
+
+int SWIG_main(int argc, char *argv[], const TargetLanguageModule *tlm);
 void emit_parameter_variables(ParmList *l, Wrapper *f);
 void emit_return_variable(Node *n, SwigType *rt, Wrapper *f);
-void SWIG_exit(int);		/* use EXIT_{SUCCESS,FAILURE} */
 void SWIG_config_file(const_String_or_char_ptr );
 const String *SWIG_output_directory();
 void SWIG_config_cppext(const char *ext);
@@ -361,15 +382,15 @@ List *SWIG_output_files();
 void SWIG_library_directory(const char *);
 int emit_num_arguments(ParmList *);
 int emit_num_required(ParmList *);
-int emit_isvarargs(ParmList *);
+int emit_isvarargs(ParmList *p);
+bool emit_isvarargs_function(Node *n);
 void emit_attach_parmmaps(ParmList *, Wrapper *f);
 void emit_mark_varargs(ParmList *l);
 String *emit_action(Node *n);
 int emit_action_code(Node *n, String *wrappercode, String *action);
 void Swig_overload_check(Node *n);
-String *Swig_overload_dispatch(Node *n, const_String_or_char_ptr fmt, int *);
+String *Swig_overload_dispatch(Node *n, const_String_or_char_ptr fmt, int *, const_String_or_char_ptr fmt_fastdispatch = 0);
 String *Swig_overload_dispatch_cast(Node *n, const_String_or_char_ptr fmt, int *);
-String *Swig_overload_dispatch_fast(Node *n, const_String_or_char_ptr fmt, int *);
 List *Swig_overload_rank(Node *n, bool script_lang_wrapping);
 SwigType *cplus_value_type(SwigType *t);
 
@@ -378,19 +399,11 @@ String *Swig_csuperclass_call(String *base, String *method, ParmList *l);
 String *Swig_class_declaration(Node *n, String *name);
 String *Swig_class_name(Node *n);
 String *Swig_method_call(const_String_or_char_ptr name, ParmList *parms);
-String *Swig_method_decl(SwigType *rtype, SwigType *decl, const_String_or_char_ptr id, List *args, int strip, int values);
+String *Swig_method_decl(SwigType *return_base_type, SwigType *decl, const_String_or_char_ptr id, List *args, int default_args);
 String *Swig_director_declaration(Node *n);
 void Swig_director_emit_dynamic_cast(Node *n, Wrapper *f);
 void Swig_director_parms_fixup(ParmList *parms);
 /* directors.cxx end */
-
-extern "C" {
-  void SWIG_typemap_lang(const char *);
-  typedef Language *(*ModuleFactory) (void);
-} 
-
-void Swig_register_module(const char *name, ModuleFactory fac);
-ModuleFactory Swig_find_module(const char *name);
 
 /* Utilities */
 
@@ -416,19 +429,24 @@ extern "C" {
 }
 
 /* Contracts */
-
 void Swig_contracts(Node *n);
 void Swig_contract_mode_set(int flag);
 int Swig_contract_mode_get();
 
 /* Browser */
-
 void Swig_browser(Node *n, int);
 void Swig_default_allocators(Node *n);
 void Swig_process_types(Node *n);
+
+/* Nested classes */
 void Swig_nested_process_classes(Node *n);
 void Swig_nested_name_unnamed_c_structs(Node *n);
 
+/* Interface feature */
+void Swig_interface_feature_enable();
+void Swig_interface_propagate_methods(Node *n);
+
+/* Miscellaneous */
 template <class T> class save_value {
   T _value;
   T& _value_ptr;

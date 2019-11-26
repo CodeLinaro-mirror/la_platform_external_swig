@@ -127,7 +127,7 @@ String *Swig_strip_c_comments(const String *s) {
   }
 
   if (comment_begin && comment_end) {
-    int size = comment_begin - Char(s);
+    int size = (int)(comment_begin - Char(s));
     String *stripmore = 0;
     stripped = NewStringWithSize(s, size);
     Printv(stripped, comment_end + 1, NIL);
@@ -309,6 +309,7 @@ int Swig_storage_isstatic(Node *n) {
  * Swig_string_escape()
  *
  * Takes a string object and produces a string with escape codes added to it.
+ * Octal escaping is used.
  * ----------------------------------------------------------------------------- */
 
 String *Swig_string_escape(String *s) {
@@ -342,6 +343,43 @@ String *Swig_string_escape(String *s) {
   return ns;
 }
 
+/* -----------------------------------------------------------------------------
+ * Swig_string_hexescape()
+ *
+ * Takes a string object and produces a string with escape codes added to it.
+ * Hex escaping is used.
+ * ----------------------------------------------------------------------------- */
+
+String *Swig_string_hexescape(String *s) {
+  String *ns;
+  int c;
+  ns = NewStringEmpty();
+
+  while ((c = Getc(s)) != EOF) {
+    if (c == '\n') {
+      Printf(ns, "\\n");
+    } else if (c == '\r') {
+      Printf(ns, "\\r");
+    } else if (c == '\t') {
+      Printf(ns, "\\t");
+    } else if (c == '\\') {
+      Printf(ns, "\\\\");
+    } else if (c == '\'') {
+      Printf(ns, "\\'");
+    } else if (c == '\"') {
+      Printf(ns, "\\\"");
+    } else if (c == ' ') {
+      Putc(c, ns);
+    } else if (!isgraph(c)) {
+      if (c < 0)
+	c += UCHAR_MAX + 1;
+      Printf(ns, "\\x%X", c);
+    } else {
+      Putc(c, ns);
+    }
+  }
+  return ns;
+}
 
 /* -----------------------------------------------------------------------------
  * Swig_string_upper()
@@ -485,7 +523,7 @@ String *Swig_string_ucase(String *s) {
   /* We insert a underscore when:
      1. Lower case char followed by upper case char
      getFoo > get_foo; getFOo > get_foo; GETFOO > getfoo
-     2. Number proceded by char and not end of string
+     2. Number preceded by char and not end of string
      get2D > get_2d; get22D > get_22d; GET2D > get_2d
      but:
      asFloat2 > as_float2
@@ -785,10 +823,11 @@ String *Swig_string_emangle(String *s) {
 
 
 /* -----------------------------------------------------------------------------
- * Swig_scopename_prefix()
+ * Swig_scopename_split()
  *
- * Take a qualified name like "A::B::C" and return the scope name.
- * In this case, "A::B".   Returns NULL if there is no base.
+ * Take a qualified name like "A::B::C" and splits off the last name.
+ * In this case, returns "C" as last and "A::B" as prefix.
+ * Always returns non NULL for last, but prefix may be NULL if there is no prefix.
  * ----------------------------------------------------------------------------- */
 
 void Swig_scopename_split(const String *s, String **rprefix, String **rlast) {
@@ -808,7 +847,7 @@ void Swig_scopename_split(const String *s, String **rprefix, String **rlast) {
       *rlast = Copy(s);
       return;
     } else {
-      *rprefix = NewStringWithSize(cc, co - cc - 2);
+      *rprefix = NewStringWithSize(cc, (int)(co - cc - 2));
       *rlast = NewString(co);
       return;
     }
@@ -835,7 +874,7 @@ void Swig_scopename_split(const String *s, String **rprefix, String **rlast) {
   }
 
   if (cc != tmp) {
-    *rprefix = NewStringWithSize(tmp, cc - tmp);
+    *rprefix = NewStringWithSize(tmp, (int)(cc - tmp));
     *rlast = NewString(cc + 2);
     return;
   } else {
@@ -844,6 +883,12 @@ void Swig_scopename_split(const String *s, String **rprefix, String **rlast) {
   }
 }
 
+/* -----------------------------------------------------------------------------
+ * Swig_scopename_prefix()
+ *
+ * Take a qualified name like "A::B::C" and return the scope name.
+ * In this case, "A::B".   Returns NULL if there is no base.
+ * ----------------------------------------------------------------------------- */
 
 String *Swig_scopename_prefix(const String *s) {
   char *tmp = Char(s);
@@ -858,7 +903,7 @@ String *Swig_scopename_prefix(const String *s) {
     if (co == cc) {
       return 0;
     } else {
-      String *prefix = NewStringWithSize(cc, co - cc - 2);
+      String *prefix = NewStringWithSize(cc, (int)(co - cc - 2));
       return prefix;
     }
   }
@@ -884,7 +929,7 @@ String *Swig_scopename_prefix(const String *s) {
   }
 
   if (cc != tmp) {
-    return NewStringWithSize(tmp, cc - tmp);
+    return NewStringWithSize(tmp, (int)(cc - tmp));
   } else {
     return 0;
   }
@@ -977,7 +1022,7 @@ String *Swig_scopename_first(const String *s) {
     }
   }
   if (*c && (c != tmp)) {
-    return NewStringWithSize(tmp, c - tmp);
+    return NewStringWithSize(tmp, (int)(c - tmp));
   } else {
     return 0;
   }
@@ -1030,6 +1075,31 @@ String *Swig_scopename_suffix(const String *s) {
 }
 
 /* -----------------------------------------------------------------------------
+ * Swig_scopename_tolist()
+ *
+ * Take a qualified scope name like "A::B::C" and convert it to a list.
+ * In this case, return a list of 3 elements "A", "B", "C".
+ * Returns an empty list if the input is empty.
+ * ----------------------------------------------------------------------------- */
+
+List *Swig_scopename_tolist(const String *s) {
+  List *scopes = NewList();
+  String *name = Len(s) == 0 ? 0 : NewString(s);
+
+  while (name) {
+    String *last = 0;
+    String *prefix = 0;
+    Swig_scopename_split(name, &prefix, &last);
+    Insert(scopes, 0, last);
+    Delete(last);
+    Delete(name);
+    name = prefix;
+  }
+  Delete(name);
+  return scopes;
+}
+
+/* -----------------------------------------------------------------------------
  * Swig_scopename_check()
  *
  * Checks to see if a name is qualified with a scope name, examples:
@@ -1079,19 +1149,17 @@ int Swig_scopename_check(const String *s) {
  *
  *  Printf(stderr,"%(command:sed 's/[a-z]/\U\\1/' <<<)s","hello") -> Hello
  * ----------------------------------------------------------------------------- */
-#if defined(HAVE_POPEN)
-#  if defined(_MSC_VER)
-#    define popen _popen
-#    define pclose _pclose
-#  else
-extern FILE *popen(const char *command, const char *type);
-extern int pclose(FILE *stream);
+#if defined(_MSC_VER)
+#  define popen _popen
+#  define pclose _pclose
+#  if !defined(HAVE_POPEN)
+#    define HAVE_POPEN 1
 #  endif
 #else
-#  if defined(_MSC_VER)
-#    define HAVE_POPEN 1
-#    define popen _popen
-#    define pclose _pclose
+#  if !defined(_WIN32)
+/* These Posix functions are not ISO C and so are not always defined in stdio.h */
+extern FILE *popen(const char *command, const char *type);
+extern int pclose(FILE *stream);
 #  endif
 #endif
 
@@ -1109,7 +1177,7 @@ String *Swig_string_command(String *s) {
       pclose(fp);
     } else {
       Swig_error("SWIG", Getline(s), "Command encoder fails attempting '%s'.\n", s);
-      exit(1);
+      SWIG_exit(EXIT_FAILURE);
     }
   }
 #endif
@@ -1139,6 +1207,39 @@ String *Swig_string_strip(String *s) {
       String *prefix = NewStringf(fmt, cs+1);
       if (0 == Strncmp(ce+1, prefix, Len(prefix))) {
         ns = NewString(ce+1+Len(prefix));
+      } else {
+        ns = NewString(ce+1);
+      }
+    }
+  }
+  return ns;
+}
+
+/* -----------------------------------------------------------------------------
+ * Swig_string_rstrip()
+ *
+ * Strip given suffix from identifiers 
+ *
+ *  Printf(stderr,"%(rstrip:[Cls])s","HelloCls") -> Hello
+ * ----------------------------------------------------------------------------- */
+
+String *Swig_string_rstrip(String *s) {
+  String *ns;
+  int len = Len(s);
+  if (!len) {
+    ns = NewString(s);
+  } else {
+    const char *cs = Char(s);
+    const char *ce = Strchr(cs, ']');
+    if (*cs != '[' || !ce) {
+      ns = NewString(s);
+    } else {
+      String *fmt = NewStringf("%%.%ds", ce-cs-1);
+      String *suffix = NewStringf(fmt, cs+1);
+      int suffix_len = Len(suffix);
+      if (0 == Strncmp(cs+len-suffix_len, suffix, suffix_len)) {
+	int copy_len = len-suffix_len-(int)(ce+1-cs);
+        ns = NewStringWithSize(ce+1, copy_len);
       } else {
         ns = NewString(ce+1);
       }
@@ -1219,14 +1320,15 @@ static int split_regex_pattern_subst(String *s, String **pattern, String **subst
   if (!p) goto err_out;
   sube = p;
 
-  *pattern = NewStringWithSize(pats, pate - pats);
-  *subst   = NewStringWithSize(subs, sube - subs);
+  *pattern = NewStringWithSize(pats, (int)(pate - pats));
+  *subst   = NewStringWithSize(subs, (int)(sube - subs));
   *input   = p + 1;
   return 1;
 
 err_out:
   Swig_error("SWIG", Getline(s), "Invalid regex substitution: '%s'.\n", s);
-  exit(1);
+  SWIG_exit(EXIT_FAILURE);
+  return 0;
 }
 
 /* This function copies len characters from src to dst, possibly applying case conversions to them: if convertCase is 1, to upper case and if it is -1, to lower
@@ -1244,7 +1346,8 @@ static void copy_with_maybe_case_conversion(String *dst, const char *src, int le
 
   /* If we must convert only the first character, do it and write the rest at once. */
   if (convertNextOnly) {
-    Putc(*convertCase == 1 ? toupper(*src) : tolower(*src), dst);
+    int src_char = *src;
+    Putc(*convertCase == 1 ? toupper(src_char) : tolower(src_char), dst);
     *convertCase = 0;
     if (len > 1) {
       Write(dst, src + 1, len - 1);
@@ -1253,7 +1356,8 @@ static void copy_with_maybe_case_conversion(String *dst, const char *src, int le
     /* We need to convert all characters. */
     int i;
     for (i = 0; i < len; i++, src++) {
-      Putc(*convertCase == 1 ? toupper(*src) : tolower(*src), dst);
+      int src_char = *src;
+      Putc(*convertCase == 1 ? toupper(src_char) : tolower(src_char), dst);
     }
   }
 }
@@ -1268,10 +1372,10 @@ String *replace_captures(int num_captures, const char *input, String *subst, int
     /* Copy part without substitutions */
     const char *q = strchr(p, '\\');
     if (!q) {
-      copy_with_maybe_case_conversion(result, p, strlen(p), &convertCase, convertNextOnly);
+      copy_with_maybe_case_conversion(result, p, (int)strlen(p), &convertCase, convertNextOnly);
       break;
     }
-    copy_with_maybe_case_conversion(result, p, q - p, &convertCase, convertNextOnly);
+    copy_with_maybe_case_conversion(result, p, (int)(q - p), &convertCase, convertNextOnly);
     p = q + 1;
 
     /* Handle substitution */
@@ -1326,7 +1430,7 @@ String *replace_captures(int num_captures, const char *input, String *subst, int
  *
  * Executes a regular expression substitution. For example:
  *
- *   Printf(stderr,"gsl%(regex:/GSL_.*_/\\1/)s","GSL_Hello_") -> gslHello
+ *   Printf(stderr,"gsl%(regex:/GSL_(.*)_/\\1/)s", "GSL_Hello_") -> gslHello
  * ----------------------------------------------------------------------------- */
 String *Swig_string_regex(String *s) {
   const int pcre_options = 0;
@@ -1346,15 +1450,15 @@ String *Swig_string_regex(String *s) {
     if (!compiled_pat) {
       Swig_error("SWIG", Getline(s), "PCRE compilation failed: '%s' in '%s':%i.\n",
           pcre_error, Char(pattern), pcre_errorpos);
-      exit(1);
+      SWIG_exit(EXIT_FAILURE);
     }
-    rc = pcre_exec(compiled_pat, NULL, input, strlen(input), 0, 0, captures, 30);
+    rc = pcre_exec(compiled_pat, NULL, input, (int)strlen(input), 0, 0, captures, 30);
     if (rc >= 0) {
       res = replace_captures(rc, input, subst, captures, pattern, s);
     } else if (rc != PCRE_ERROR_NOMATCH) {
       Swig_error("SWIG", Getline(s), "PCRE execution failed: error %d while matching \"%s\" using \"%s\".\n",
 	rc, Char(pattern), input);
-      exit(1);
+      SWIG_exit(EXIT_FAILURE);
     }
   }
 
@@ -1372,7 +1476,8 @@ String *Swig_pcre_version(void) {
 
 String *Swig_string_regex(String *s) {
   Swig_error("SWIG", Getline(s), "PCRE regex support not enabled in this SWIG build.\n");
-  exit(1);
+  SWIG_exit(EXIT_FAILURE);
+  return 0;
 }
 
 String *Swig_pcre_version(void) {
@@ -1380,6 +1485,17 @@ String *Swig_pcre_version(void) {
 }
 
 #endif
+
+/* ------------------------------------------------------------
+ * Swig_is_generated_overload()
+ * Check if the function is an automatically generated
+ * overload created because a method has default parameters. 
+ * ------------------------------------------------------------ */
+int Swig_is_generated_overload(Node *n) {
+  Node *base_method = Getattr(n, "sym:overloaded");
+  Node *default_args = Getattr(n, "defaultargs");
+  return ((base_method != NULL) && (default_args != NULL) && (base_method == default_args));
+}
 
 /* -----------------------------------------------------------------------------
  * Swig_init()
@@ -1390,6 +1506,7 @@ String *Swig_pcre_version(void) {
 void Swig_init() {
   /* Set some useful string encoding methods */
   DohEncoding("escape", Swig_string_escape);
+  DohEncoding("hexescape", Swig_string_hexescape);
   DohEncoding("upper", Swig_string_upper);
   DohEncoding("lower", Swig_string_lower);
   DohEncoding("title", Swig_string_title);
@@ -1401,6 +1518,7 @@ void Swig_init() {
   DohEncoding("command", Swig_string_command);
   DohEncoding("schemify", Swig_string_schemify);
   DohEncoding("strip", Swig_string_strip);
+  DohEncoding("rstrip", Swig_string_rstrip);
   DohEncoding("regex", Swig_string_regex);
 
   /* aliases for the case encoders */

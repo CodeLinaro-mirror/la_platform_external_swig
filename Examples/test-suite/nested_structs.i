@@ -1,5 +1,21 @@
 %module nested_structs
 
+#if defined(SWIG_JAVASCRIPT_V8)
+
+%inline %{
+#if __GNUC__ >= 5 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+/* for nested C class wrappers compiled as C++ code */
+/* dereferencing type-punned pointer will break strict-aliasing rules [-Werror=strict-aliasing] */
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
+%}
+
+#endif
+
+#ifdef SWIGOCAML
+%warnfilter(SWIGWARN_PARSE_KEYWORD) val;
+#endif
+
 // bug #491476
 %inline %{
 struct Outer {
@@ -33,6 +49,7 @@ int getInside1Val(struct Outer *n) { return n->inside1.val; }
 Below was causing problems in Octave as wrappers were compiled as C++.
 Solution requires regenerating the inner struct into
 the global C++ namespace (which is where it is intended to be in C).
+See cparse_cplusplusout / Swig_cparse_cplusplusout in the Source.
 */
 %inline %{
 int nestedByVal(struct Named s);

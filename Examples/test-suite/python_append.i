@@ -5,22 +5,25 @@ Testcase to test %pythonprepend and %pythonappend %pythoncode %pythonbegin
 %module python_append 
 
 %pythoncode %{
-  mypath = os.path.dirname("/a/b/c/d.txt")
-  funcpath = None
-  staticfuncpath = None
-  def grabpath():
+mypath = os.path.dirname("/a/b/c/d.txt")
+funcpath = None
+staticfuncpath = None
+def grabpath():
     return funcpath
-  def grabstaticpath():
+def grabstaticpath():
     return staticfuncpath
+def clearstaticpath():
+    global staticfuncpath
+    staticfuncpath = None
 %}
 
-%pythonappend Test::func %{
-    funcpath = os.path.dirname(funcpath)
+%pythonappend Test::funk %{
+funcpath = os.path.dirname(funcpath)
 %}
 
-%pythonprepend Test::func %{
-        global funcpath
-        funcpath = mypath
+%pythonprepend Test::funk %{
+global funcpath
+funcpath = mypath
 %}
 
 %pythonappend Test::static_func %{
@@ -29,9 +32,9 @@ pass
 %}
 
 %pythonprepend Test::static_func {
-    global staticfuncpath
-    staticfuncpath = mypath
-    pass
+global staticfuncpath
+staticfuncpath = mypath
+pass
 }
 
 %pythonbegin %{
@@ -43,8 +46,13 @@ import os.path
 class Test {
 public:
   static void static_func() {};
-  void func() {};
+  void funk() {};
 };
 
+#ifdef SWIGPYTHON_BUILTIN
+bool is_python_builtin() { return true; }
+#else
+bool is_python_builtin() { return false; }
+#endif
 %}
 

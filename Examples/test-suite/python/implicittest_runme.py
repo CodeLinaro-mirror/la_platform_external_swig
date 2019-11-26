@@ -1,8 +1,10 @@
 from implicittest import *
 
+
 def check(a, b):
     if a != b:
         raise RuntimeError(str(a) + " does not equal " + str(b))
+
 
 #### Class ####
 
@@ -11,14 +13,7 @@ check(1, A(1).get())
 check(2, A(1.0).get())
 check(3, A(B()).get())
 check(4, A("hello").get())
-try:
-    check(3, A(None).get())
-    raise RuntimeError
-except ValueError:
-    # ValueError: invalid null reference in method 'new_A', argument 1 of type 'B const &'
-    # Arguably A(char *) should be chosen, but there is a bug to do with None passed to methods overloaded by value,
-    # references and pointers to different types, where pointers ought to be given a slightly higher precedence.
-    pass
+check(4, A(None).get())
 
 check(1, get(1))
 check(2, get(1.0))
@@ -52,10 +47,14 @@ except TypeError:
 
 #### Global variable assignment ####
 
-cvar.foo = Foo(1);          check(cvar.foo.ii, 1)
-cvar.foo = 1;               check(cvar.foo.ii, 1)
-cvar.foo = 1.0;             check(cvar.foo.ii, 2)
-cvar.foo = Foo("hello");    check(cvar.foo.ii, 3)
+cvar.foo = Foo(1)
+check(cvar.foo.ii, 1)
+cvar.foo = 1
+check(cvar.foo.ii, 1)
+cvar.foo = 1.0
+check(cvar.foo.ii, 2)
+cvar.foo = Foo("hello")
+check(cvar.foo.ii, 3)
 
 # explicit constructor:
 try:
@@ -67,10 +66,14 @@ except TypeError:
 #### Member variable assignment ####
 # Note: also needs naturalvar
 
-b = Bar();                  check(b.f.ii, 0)
-b.f = Foo("hello");         check(b.f.ii, 3)
-b.f = 1;                    check(b.f.ii, 1)
-b.f = 1.0;                  check(b.f.ii, 2)
+b = Bar()
+check(b.f.ii, 0)
+b.f = Foo("hello")
+check(b.f.ii, 3)
+b.f = 1
+check(b.f.ii, 1)
+b.f = 1.0
+check(b.f.ii, 2)
 
 # explicit constructor:
 try:
@@ -122,4 +125,3 @@ ccc = CCC(B())
 check(ccc.checkvalue, 10)
 check(ccc.xx(123), 11)
 check(ccc.yy(123, 123), 111)
-
