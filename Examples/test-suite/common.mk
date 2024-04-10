@@ -88,11 +88,11 @@ CPP_TEST_BROKEN += \
 	extend_variable \
 	li_boost_shared_ptr_template \
 	nested_private \
-	rename_camel \
 	template_default_pointer \
-	template_private_assignment \
-	template_expr \
-	$(CPP11_TEST_BROKEN)
+	$(CPP11_TEST_BROKEN) \
+	$(CPP14_TEST_BROKEN) \
+	$(CPP17_TEST_BROKEN) \
+	$(CPP20_TEST_BROKEN)
 
 
 # Broken C test cases. (Can be run individually using: make testcase.ctest)
@@ -102,8 +102,10 @@ C_TEST_BROKEN += \
 # C++ test cases. (Can be run individually using: make testcase.cpptest)
 CPP_TEST_CASES += \
 	abstract_access \
+	abstract_basecast \
 	abstract_inherit \
 	abstract_inherit_ok \
+	abstract_inherit_using \
 	abstract_signature \
 	abstract_typedef \
 	abstract_typedef2 \
@@ -117,6 +119,7 @@ CPP_TEST_CASES += \
 	anonymous_bitfield \
 	apply_signed_char \
 	apply_strings \
+	argcargvtest \
 	argout \
 	array_member \
 	array_typedef_memberin \
@@ -125,15 +128,20 @@ CPP_TEST_CASES += \
 	arrays_global \
 	arrays_global_twodim \
 	arrays_scope \
+	assign_const \
+	assign_reference \
 	autodoc \
+	begin_code \
 	bloody_hell \
 	bools \
 	catches \
+	catches_strings \
 	cast_operator \
 	casts \
 	char_binary \
 	char_strings \
 	chartest \
+	class_case \
 	class_scope_namespace \
 	class_forward \
 	class_ignore \
@@ -141,9 +149,11 @@ CPP_TEST_CASES += \
 	compactdefaultargs \
 	const_const_2 \
 	constant_directive \
+	constant_expr \
 	constant_pointers \
 	constover \
 	constructor_copy \
+	constructor_copy_non_const \
 	constructor_exception \
 	constructor_explicit \
 	constructor_ignore \
@@ -154,18 +164,15 @@ CPP_TEST_CASES += \
 	conversion_namespace \
 	conversion_ns_template \
 	conversion_operators \
+	copyctor \
 	cplusplus_throw \
 	cpp_basic \
 	cpp_enum \
 	cpp_namespace \
 	cpp_nodefault \
+	cpp_parameters \
 	cpp_static \
 	cpp_typedef \
-	cpp14_binary_integer_literals \
-	cpp17_hex_floating_literals \
-	cpp17_nested_namespaces \
-	cpp17_nspace_nested_namespaces \
-	cpp17_u8_char_literals \
 	curiously_recurring_template_pattern \
 	default_args \
 	default_arg_expressions \
@@ -183,6 +190,8 @@ CPP_TEST_CASES += \
 	director_classes \
 	director_classic \
 	director_constructor \
+	director_comparison_operators \
+	director_conversion_operators \
 	director_default \
 	director_detect \
 	director_enum \
@@ -194,6 +203,7 @@ CPP_TEST_CASES += \
 	director_frob \
 	director_ignore \
 	director_keywords \
+	director_multiple_inheritance \
 	director_namespace_clash \
 	director_nested \
 	director_nspace \
@@ -208,13 +218,19 @@ CPP_TEST_CASES += \
 	director_protected_overloaded \
 	director_redefined \
 	director_ref \
+	director_simple \
 	director_smartptr \
+	director_template \
 	director_thread \
 	director_unroll \
+	director_unwrap_result \
 	director_using \
+	director_using_member_scopes \
 	director_void \
 	director_wombat \
 	disown \
+	duplicate_class_name_in_ns \
+	duplicate_parm_names \
 	dynamic_cast \
 	empty \
 	enum_ignore \
@@ -229,6 +245,7 @@ CPP_TEST_CASES += \
 	evil_diamond_ns \
 	evil_diamond_prop \
 	exception_classname \
+	exception_memory_leak \
 	exception_order \
 	extend \
 	extend_constructor_destructor \
@@ -246,10 +263,12 @@ CPP_TEST_CASES += \
 	features \
 	fragments \
 	friends \
+	friends_operator_overloading \
 	friends_template \
 	funcptr_cpp \
 	functors \
 	fvirtual \
+	global_immutable_vars_cpp \
 	global_namespace \
 	global_ns_arg \
 	global_scope_types \
@@ -299,6 +318,7 @@ CPP_TEST_CASES += \
 	multiple_inheritance_abstract \
 	multiple_inheritance_interfaces \
 	multiple_inheritance_nspace \
+	multiple_inheritance_overload \
 	multiple_inheritance_shared_ptr \
 	name_cxx \
 	name_warnings \
@@ -309,6 +329,7 @@ CPP_TEST_CASES += \
 	namespace_forward_declaration \
 	namespace_nested \
 	namespace_spaces \
+	namespace_struct \
 	namespace_template \
 	namespace_typedef_class \
 	namespace_typemap \
@@ -326,12 +347,13 @@ CPP_TEST_CASES += \
 	nested_ignore \
 	nested_inheritance_interface \
 	nested_in_template \
-	nested_scope \
+	nested_scope_flat \
 	nested_template_base \
 	nested_workaround \
 	newobject1 \
 	newobject3 \
 	null_pointer \
+	numeric_bounds_checking \
 	operator_overload \
 	operator_overload_break \
 	operator_pointer_ref \
@@ -354,6 +376,8 @@ CPP_TEST_CASES += \
 	overload_template_fast \
 	pointer_reference \
 	preproc_constants \
+	preproc_cpp \
+	preproc_predefined_stdcpp \
 	primitive_ref \
 	private_assign \
 	proxycode \
@@ -367,6 +391,7 @@ CPP_TEST_CASES += \
 	rename2 \
 	rename3 \
 	rename4 \
+	rename_camel \
 	rename_rstrip_encoder \
 	rename_scope \
 	rename_simple \
@@ -414,6 +439,7 @@ CPP_TEST_CASES += \
 	struct_value \
 	swig_exception \
 	symbol_clash \
+	sym \
 	template_arg_replace \
 	template_arg_scope \
 	template_arg_typename \
@@ -437,15 +463,18 @@ CPP_TEST_CASES += \
 	template_default_inherit \
 	template_default_qualify \
 	template_default_vw \
+	template_duplicate \
 	template_empty_inherit \
 	template_enum \
 	template_enum_ns_inherit \
 	template_enum_typedef \
 	template_explicit \
+	template_expr \
 	template_extend1 \
 	template_extend2 \
 	template_extend_overload \
 	template_extend_overload_2 \
+	template_function_parm \
 	template_forward \
 	template_inherit \
 	template_inherit_abstract \
@@ -453,9 +482,12 @@ CPP_TEST_CASES += \
 	template_keyword_in_type \
 	template_methods \
 	template_namespace_forward_declaration \
+	template_private_assignment \
 	template_using_directive_and_declaration_forward \
 	template_using_directive_typedef \
+	template_using_member_default_arg \
 	template_nested \
+	template_nested_flat \
 	template_nested_typemaps \
 	template_ns \
 	template_ns2 \
@@ -468,6 +500,7 @@ CPP_TEST_CASES += \
 	template_parameters_global_scope \
 	template_partial_arg \
 	template_partial_specialization \
+	template_partial_specialization_more \
 	template_partial_specialization_typedef \
 	template_qualifier \
 	template_ref_type \
@@ -476,9 +509,12 @@ CPP_TEST_CASES += \
 	template_specialization \
 	template_specialization_defarg \
 	template_specialization_enum \
+	template_specialization_using_declaration \
 	template_static \
 	template_tbase_template \
 	template_template_parameters \
+	template_template_template_parameters \
+	template_type_collapse \
 	template_typedef \
 	template_typedef_class_template \
 	template_typedef_cplx \
@@ -541,6 +577,9 @@ CPP_TEST_CASES += \
 	using_directive_and_declaration_forward \
 	using_extend \
 	using_inherit \
+	using_member \
+	using_member_multiple_inherit \
+	using_member_scopes \
 	using_namespace \
 	using_namespace_loop \
 	using_pointers \
@@ -566,13 +605,21 @@ CPP11_TEST_CASES += \
 	cpp11_alias_nested_template_scoping \
 	cpp11_alignment \
 	cpp11_alternate_function_syntax \
+	cpp11_assign_delete \
+	cpp11_assign_rvalue_reference \
+	cpp11_attribute_specifiers \
+	cpp11_auto_variable \
+	cpp11_brackets_expression \
 	cpp11_constexpr \
+	cpp11_copyctor_delete \
 	cpp11_decltype \
 	cpp11_default_delete \
 	cpp11_delegating_constructors \
 	cpp11_director_enums \
+	cpp11_director_using_constructor \
 	cpp11_directors \
 	cpp11_explicit_conversion_operators \
+	cpp11_final_class \
 	cpp11_final_directors \
 	cpp11_final_override \
 	cpp11_function_objects \
@@ -580,6 +627,9 @@ CPP11_TEST_CASES += \
 	cpp11_initializer_list \
 	cpp11_initializer_list_extend \
 	cpp11_lambda_functions \
+        cpp11_move_only \
+        cpp11_move_typemaps \
+        cpp11_move_only_valuewrapper \
 	cpp11_noexcept \
 	cpp11_null_pointer_constant \
 	cpp11_raw_string_literals \
@@ -590,38 +640,82 @@ CPP11_TEST_CASES += \
 	cpp11_rvalue_reference \
 	cpp11_rvalue_reference2 \
 	cpp11_rvalue_reference3 \
+	cpp11_rvalue_reference_move \
 	cpp11_sizeof_object \
 	cpp11_static_assert \
 	cpp11_std_array \
+	cpp11_std_unique_ptr \
 	cpp11_strongly_typed_enumerations \
 	cpp11_thread_local \
 	cpp11_template_double_brackets \
 	cpp11_template_explicit \
+	cpp11_template_parameters_decltype \
+	cpp11_template_templated_methods \
 	cpp11_template_typedefs \
 	cpp11_type_traits \
 	cpp11_type_aliasing \
 	cpp11_uniform_initialization \
 	cpp11_unrestricted_unions \
 	cpp11_userdefined_literals \
+	cpp11_using_constructor \
+	cpp11_using_typedef_struct \
+	cpp11_variadic_function_templates \
+	cpp11_variadic_templates \
 
 # Broken C++11 test cases.
 CPP11_TEST_BROKEN = \
-#	cpp11_variadic_templates \    # Broken for some languages (such as Java)
 #	cpp11_reference_wrapper \     # No typemaps
 
+# C++14 test cases.
+CPP14_TEST_CASES += \
+	cpp14_auto_return_type \
+	cpp14_binary_integer_literals \
+
+# Broken C++14 test cases.
+CPP14_TEST_BROKEN = \
+
+# C++17 test cases.
+CPP17_TEST_CASES += \
+	cpp17_director_string_view \
+	cpp17_enable_if_t \
+	cpp17_hex_floating_literals \
+	cpp17_map_no_default_ctor \
+	cpp17_nested_namespaces \
+	cpp17_nspace_nested_namespaces \
+	cpp17_string_view \
+	cpp17_u8_char_literals \
+
+# Broken C++17 test cases.
+CPP17_TEST_BROKEN = \
+
+# C++20 test cases.
+CPP20_TEST_CASES += \
+	cpp20_constexpr_destructor \
+	cpp20_lambda_template \
+	cpp20_spaceship_operator \
+
+# Broken C++20 test cases.
+CPP20_TEST_BROKEN = \
+
 # Doxygen support test cases: can only be used with languages supporting
-# Doxygen comment translation, currently only Python and Java.
+# Doxygen comment translation (currently Python and Java) and only if not
+# disabled by configure via SKIP_DOXYGEN_TEST_CASES.
+ifneq ($(SKIP_DOXYGEN_TEST_CASES),1)
 python_HAS_DOXYGEN := 1
 java_HAS_DOXYGEN := 1
 
 $(eval HAS_DOXYGEN := $($(LANGUAGE)_HAS_DOXYGEN))
+endif
 
 ifdef HAS_DOXYGEN
 DOXYGEN_TEST_CASES += \
 	doxygen_alias \
+	doxygen_autodoc_docstring \
 	doxygen_basic_notranslate \
 	doxygen_basic_translate \
 	doxygen_basic_translate_style2 \
+	doxygen_basic_translate_style3 \
+	doxygen_code_blocks \
 	doxygen_ignore \
 	doxygen_misc_constructs \
 	doxygen_nested_class \
@@ -656,6 +750,7 @@ CPP_STD_TEST_CASES += \
 	li_std_vector_enum \
 	li_std_vector_member_var\
 	li_std_vector_ptr \
+	li_std_vector_vector \
 	li_std_wstring \
 	smart_pointer_inherit \
 	template_typedef_fnc \
@@ -666,8 +761,20 @@ ifndef SKIP_CPP_STD_CASES
 CPP_TEST_CASES += ${CPP_STD_TEST_CASES}
 endif
 
-ifneq (,$(HAVE_CXX11_COMPILER))
+ifeq (1,$(HAVE_CXX11))
 CPP_TEST_CASES += $(CPP11_TEST_CASES)
+endif
+
+ifeq (1,$(HAVE_CXX14))
+CPP_TEST_CASES += $(CPP14_TEST_CASES)
+endif
+
+ifeq (1,$(HAVE_CXX17))
+CPP_TEST_CASES += $(CPP17_TEST_CASES)
+endif
+
+ifeq (1,$(HAVE_CXX20))
+CPP_TEST_CASES += $(CPP20_TEST_CASES)
 endif
 
 # C test cases. (Can be run individually using: make testcase.ctest)
@@ -677,8 +784,10 @@ C_TEST_CASES += \
 	c_delete \
 	c_delete_function \
 	char_constant \
+	command_line_define \
 	const_const \
-	constant_expr \
+	constant_expr_c \
+	contract_c \
 	default_args_c \
 	empty_c \
 	enums \
@@ -686,9 +795,11 @@ C_TEST_CASES += \
 	enum_macro \
 	enum_missing \
 	extern_declaration \
+	final_c \
 	funcptr \
 	function_typedef \
 	global_functions \
+	global_immutable_vars \
 	immutable_values \
 	inctest \
 	infinity \
@@ -708,14 +819,18 @@ C_TEST_CASES += \
 	nested_extend_c \
 	nested_structs \
 	newobject2 \
+	not_c_keywords \
 	overload_extend_c \
 	overload_extend2 \
 	preproc \
 	preproc_constants_c \
 	preproc_defined \
+	preproc_expr \
 	preproc_gcc_output \
 	preproc_include \
 	preproc_line_file \
+	preproc_predefined \
+	preproc_predefined_stdc \
 	register_par \
 	ret_by_value \
 	simple_array \
@@ -744,10 +859,17 @@ MULTI_CPP_TEST_CASES += \
 # Custom tests - tests with additional commandline options
 wallkw.cpptest: SWIGOPT += -Wallkw
 preproc_include.ctest: SWIGOPT += -includeall
+command_line_define.ctest: SWIGOPT += -DFOO -DBAR=123 -DBAZ -UBAZ -UNOTSET
+preproc_predefined_stdc.ctest: SWIGOPT += -std=c23
+preproc_predefined_stdcpp.cpptest: SWIGOPT += -std=c++23
 
 # Allow modules to define temporarily failing tests.
 C_TEST_CASES := $(filter-out $(FAILING_C_TESTS),$(C_TEST_CASES))
 CPP_TEST_CASES := $(filter-out $(FAILING_CPP_TESTS),$(CPP_TEST_CASES))
+CPP11_TEST_CASES := $(filter-out $(FAILING_CPP_TESTS),$(CPP11_TEST_CASES))
+CPP14_TEST_CASES := $(filter-out $(FAILING_CPP_TESTS),$(CPP14_TEST_CASES))
+CPP17_TEST_CASES := $(filter-out $(FAILING_CPP_TESTS),$(CPP17_TEST_CASES))
+CPP20_TEST_CASES := $(filter-out $(FAILING_CPP_TESTS),$(CPP20_TEST_CASES))
 MULTI_CPP_TEST_CASES := $(filter-out $(FAILING_MULTI_CPP_TESTS),$(MULTI_CPP_TEST_CASES))
 
 
@@ -760,6 +882,10 @@ BROKEN_TEST_CASES = 	$(CPP_TEST_BROKEN:=.cpptest) \
 			$(C_TEST_BROKEN:=.ctest)
 
 ALL_CLEAN = 		$(CPP_TEST_CASES:=.clean) \
+			$(CPP11_TEST_CASES:=.clean) \
+			$(CPP14_TEST_CASES:=.clean) \
+			$(CPP17_TEST_CASES:=.clean) \
+			$(CPP20_TEST_CASES:=.clean) \
 			$(C_TEST_CASES:=.clean) \
 			$(MULTI_CPP_TEST_CASES:=.clean) \
 			$(CPP_TEST_BROKEN:=.clean) \
@@ -788,6 +914,14 @@ check-cpp: $(CPP_TEST_CASES:=.cpptest)
 
 check-cpp11: $(CPP11_TEST_CASES:=.cpptest)
 
+check-cpp14: $(CPP14_TEST_CASES:=.cpptest)
+
+check-cpp17: $(CPP17_TEST_CASES:=.cpptest)
+
+check-cpp20: $(CPP20_TEST_CASES:=.cpptest)
+
+check-multicpp: $(MULTI_CPP_TEST_CASES:=.multicpptest)
+
 ifdef HAS_DOXYGEN
 check-doxygen: $(DOXYGEN_TEST_CASES:=.cpptest)
 endif
@@ -805,6 +939,14 @@ endif
 partialcheck:
 	$(MAKE) check CC=true CXX=true LDSHARED=true CXXSHARED=true RUNTOOL=true COMPILETOOL=true
 
+swig_and_compile_cpp_helper = \
+	$(MAKE) -f $(top_builddir)/$(EXAMPLES)/Makefile SRCDIR='$(SRCDIR)' CXXSRCS='$(CXXSRCS)' \
+	SWIG_LIB_DIR='$(SWIG_LIB_DIR)' SWIGEXE='$(SWIGEXE)' \
+	LIBS='$(LIBS)' INCLUDES='$(INCLUDES)' SWIGOPT=$(2) NOLINK=true \
+	TARGET="$(TARGETPREFIX)$(1)$(TARGETSUFFIX)" INTERFACEDIR='$(INTERFACEDIR)' INTERFACE="$(1).i" \
+	EXTRA_CXXFLAGS="$(3)" \
+	$(LANGUAGE)$(VARIANT)_cpp
+
 swig_and_compile_cpp =  \
 	$(MAKE) -f $(top_builddir)/$(EXAMPLES)/Makefile SRCDIR='$(SRCDIR)' CXXSRCS='$(CXXSRCS)' \
 	SWIG_LIB_DIR='$(SWIG_LIB_DIR)' SWIGEXE='$(SWIGEXE)' \
@@ -821,11 +963,7 @@ swig_and_compile_c =  \
 
 swig_and_compile_multi_cpp = \
 	for f in `cat $(top_srcdir)/$(EXAMPLES)/$(TEST_SUITE)/$*.list` ; do \
-	  $(MAKE) -f $(top_builddir)/$(EXAMPLES)/Makefile SRCDIR='$(SRCDIR)' CXXSRCS='$(CXXSRCS)' \
-	  SWIG_LIB_DIR='$(SWIG_LIB_DIR)' SWIGEXE='$(SWIGEXE)' \
-	  LIBS='$(LIBS)' INCLUDES='$(INCLUDES)' SWIGOPT='$(SWIGOPT)' NOLINK=true \
-	  TARGET="$(TARGETPREFIX)$${f}$(TARGETSUFFIX)" INTERFACEDIR='$(INTERFACEDIR)' INTERFACE="$$f.i" \
-	  $(LANGUAGE)$(VARIANT)_cpp; \
+	  $(call swig_and_compile_cpp_helper,$${f},'$(SWIGOPT)'); \
 	done
 
 swig_and_compile_external =  \
@@ -847,8 +985,6 @@ setup = \
 	else								  \
 	  echo "$(ACTION)ing $(LANGUAGE) testcase $*" ;		  \
 	fi
-
-
 
 #######################################################################
 # Clean

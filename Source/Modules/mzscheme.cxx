@@ -4,7 +4,7 @@
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
  * included with the SWIG source code as distributed by the SWIG developers
- * and at http://www.swig.org/legal.html.
+ * and at https://www.swig.org/legal.html.
  *
  * mzscheme.cxx
  *
@@ -12,7 +12,6 @@
  * ----------------------------------------------------------------------------- */
 
 #include "swigmod.h"
-
 #include <ctype.h>
 
 static const char *usage = "\
@@ -66,7 +65,7 @@ public:
       if (argv[i]) {
 	if (strcmp(argv[i], "-help") == 0) {
 	  fputs(usage, stdout);
-	  SWIG_exit(0);
+	  Exit(EXIT_SUCCESS);
 	} else if (strcmp(argv[i], "-prefix") == 0) {
 	  if (argv[i + 1]) {
 	    prefix = NewString(argv[i + 1]);
@@ -130,7 +129,7 @@ public:
     f_begin = NewFile(outfile, "w", SWIG_output_files());
     if (!f_begin) {
       FileErrorDisplay(outfile);
-      SWIG_exit(EXIT_FAILURE);
+      Exit(EXIT_FAILURE);
     }
     f_runtime = NewString("");
     f_init = NewString("");
@@ -148,7 +147,7 @@ public:
 
     Swig_banner(f_begin);
 
-    Printf(f_runtime, "\n\n#ifndef SWIGMZSCHEME\n#define SWIGMZSCHEME\n#endif\n\n");
+    Swig_obligatory_macros(f_runtime, "MZSCHEME");
 
     module = Getattr(n, "name");
 
@@ -322,8 +321,6 @@ public:
       }
       // Handle parameter types.
       if ((tm = Getattr(p, "tmap:in"))) {
-	Replaceall(tm, "$source", source);
-	Replaceall(tm, "$target", target);
 	Replaceall(tm, "$input", source);
 	Setattr(p, "emit:input", source);
 	Printv(f->code, tm, "\n", NIL);
@@ -343,7 +340,6 @@ public:
     /* Insert constraint checking code */
     for (p = l; p;) {
       if ((tm = Getattr(p, "tmap:check"))) {
-	Replaceall(tm, "$target", Getattr(p, "lname"));
 	Printv(f->code, tm, "\n", NIL);
 	p = Getattr(p, "tmap:check:next");
       } else {
@@ -355,8 +351,6 @@ public:
 
     for (p = l; p;) {
       if ((tm = Getattr(p, "tmap:argout"))) {
-	Replaceall(tm, "$source", Getattr(p, "emit:input"));	/* Deprecated */
-	Replaceall(tm, "$target", Getattr(p, "lname"));	/* Deprecated */
 	Replaceall(tm, "$arg", Getattr(p, "emit:input"));
 	Replaceall(tm, "$input", Getattr(p, "emit:input"));
 	Printv(outarg, tm, "\n", NIL);
@@ -371,7 +365,6 @@ public:
     /* Insert cleanup code */
     for (p = l; p;) {
       if ((tm = Getattr(p, "tmap:freearg"))) {
-	Replaceall(tm, "$target", Getattr(p, "lname"));
 	Printv(cleanup, tm, "\n", NIL);
 	p = Getattr(p, "tmap:freearg:next");
       } else {
@@ -385,8 +378,6 @@ public:
 
     // Now have return value, figure out what to do with it.
     if ((tm = Swig_typemap_lookup_out("out", n, Swig_cresult_name(), f, actioncode))) {
-      Replaceall(tm, "$source", Swig_cresult_name());
-      Replaceall(tm, "$target", "values[0]");
       Replaceall(tm, "$result", "values[0]");
       if (GetFlag(n, "feature:new"))
 	Replaceall(tm, "$owner", "1");
@@ -408,14 +399,12 @@ public:
 
     if (GetFlag(n, "feature:new")) {
       if ((tm = Swig_typemap_lookup("newfree", n, Swig_cresult_name(), 0))) {
-	Replaceall(tm, "$source", Swig_cresult_name());
 	Printv(f->code, tm, "\n", NIL);
       }
     }
     // Free any memory allocated by the function being wrapped..
 
     if ((tm = Swig_typemap_lookup("ret", n, Swig_cresult_name(), 0))) {
-      Replaceall(tm, "$source", Swig_cresult_name());
       Printv(f->code, tm, "\n", NIL);
     }
     // Wrap things up (in a manner of speaking)
@@ -453,7 +442,7 @@ public:
 	Printv(df->def, "static Scheme_Object *\n", dname, "(int argc, Scheme_Object **argv) {", NIL);
 	Printv(df->code, dispatch, "\n", NIL);
 	Printf(df->code, "scheme_signal_error(\"No matching function for overloaded '%s'\");\n", iname);
-	Printf(df->code, "return NULL;\n", iname);
+	Printf(df->code, "return NULL;\n");
 	Printv(df->code, "}\n", NIL);
 	Wrapper_print(df, f_wrappers);
 	Printf(init_func_def, "scheme_add_global(\"%s\", scheme_make_prim_w_arity(%s,\"%s\",%d,%d),menv);\n", proc_name, dname, proc_name, 0, maxargs);
@@ -521,8 +510,6 @@ public:
 	/* Check for a setting of the variable value */
 	Printf(f->code, "if (argc) {\n");
 	if ((tm = Swig_typemap_lookup("varin", n, name, 0))) {
-	  Replaceall(tm, "$source", "argv[0]");
-	  Replaceall(tm, "$target", name);
 	  Replaceall(tm, "$input", "argv[0]");
 	  Replaceall(tm, "$argnum", "1");
 	  emit_action_code(n, f->code, tm);
@@ -535,8 +522,6 @@ public:
       // of evaluating or setting)
 
       if ((tm = Swig_typemap_lookup("varout", n, name, 0))) {
-	Replaceall(tm, "$source", name);
-	Replaceall(tm, "$target", "swig_result");
 	Replaceall(tm, "$result", "swig_result");
 	/* Printf (f->code, "%s\n", tm); */
 	emit_action_code(n, f->code, tm);
@@ -584,7 +569,7 @@ public:
 
     // Make a static variable;
 
-    Printf(var_name, "_wrap_const_%s", Swig_name_mangle(Getattr(n, "sym:name")));
+    Printf(var_name, "_wrap_const_%s", Swig_name_mangle_string(Getattr(n, "sym:name")));
 
     // Build the name for scheme.
     Printv(proc_name, iname, NIL);
@@ -609,9 +594,7 @@ public:
       Printv(rvalue, "'", temp, "'", NIL);
     }
     if ((tm = Swig_typemap_lookup("constant", n, name, 0))) {
-      Replaceall(tm, "$source", rvalue);
       Replaceall(tm, "$value", rvalue);
-      Replaceall(tm, "$target", name);
       Printf(f_init, "%s\n", tm);
     } else {
       // Create variable and assign it a value
@@ -658,8 +641,6 @@ public:
    * classHandler()
    * ------------------------------------------------------------ */
   virtual int classHandler(Node *n) {
-    String *mangled_classname = 0;
-    String *real_classname = 0;
     String *scm_structname = NewString("");
     SwigType *ctype_ptr = NewStringf("p.%s", getClassType());
 
@@ -675,13 +656,10 @@ public:
     convert_proto_tab = NewString("");
 
     struct_name = Getattr(n, "sym:name");
-    mangled_struct_name = Swig_name_mangle(Getattr(n, "sym:name"));
+    mangled_struct_name = Swig_name_mangle_string(Getattr(n, "sym:name"));
 
     Printv(scm_structname, struct_name, NIL);
     Replaceall(scm_structname, "_", "-");
-
-    real_classname = Getattr(n, "name");
-    mangled_classname = Swig_name_mangle(real_classname);
 
     Printv(fieldnames_tab, "static const char *_swig_struct_", cls_swigtype, "_field_names[] = { \n", NIL);
 
@@ -712,7 +690,6 @@ public:
 	   " = SWIG_MzScheme_new_scheme_struct(menv, \"", scm_structname, "\", ",
 	   "_swig_struct_", cls_swigtype, "_field_names_cnt,", "(char**) _swig_struct_", cls_swigtype, "_field_names);\n", NIL);
 
-    Delete(mangled_classname);
     Delete(swigtype_ptr);
     swigtype_ptr = 0;
     Delete(fieldnames_tab);

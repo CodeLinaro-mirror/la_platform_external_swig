@@ -4,7 +4,7 @@
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
  * included with the SWIG source code as distributed by the SWIG developers
- * and at http://www.swig.org/legal.html.
+ * and at https://www.swig.org/legal.html.
  *
  * octave.cxx
  *
@@ -85,7 +85,7 @@ public:
     enable_cplus_runtime_mode();
     allow_overloading();
     director_multiple_inheritance = 1;
-    director_language = 1;
+    directorLanguage();
     docs = NewHash();
   }
 
@@ -119,7 +119,7 @@ public:
 	} else if (strcmp(argv[i], "-nocppcast") == 0) {
 	  Printf(stderr, "Deprecated command line option: %s. This option is no longer supported.\n", argv[i]);
 	  Swig_mark_arg(i);
-	  SWIG_exit(EXIT_FAILURE);
+	  Exit(EXIT_FAILURE);
         }
       }
     }
@@ -167,7 +167,7 @@ public:
     f_begin = NewFile(outfile, "w", SWIG_output_files());
     if (!f_begin) {
       FileErrorDisplay(outfile);
-      SWIG_exit(EXIT_FAILURE);
+      Exit(EXIT_FAILURE);
     }
     f_runtime = NewString("");
     f_header = NewString("");
@@ -190,7 +190,7 @@ public:
 
     Swig_banner(f_begin);
 
-    Printf(f_runtime, "\n\n#ifndef SWIGOCTAVE\n#define SWIGOCTAVE\n#endif\n\n");
+    Swig_obligatory_macros(f_runtime, "OCTAVE");
 
     Printf(f_runtime, "#define SWIG_name_d      \"%s\"\n", module);
     Printf(f_runtime, "#define SWIG_name        %s\n", module);
@@ -199,7 +199,7 @@ public:
     Printf(f_runtime, "#define SWIG_global_name      \"%s\"\n", global_name);
     Printf(f_runtime, "#define SWIG_op_prefix        \"%s\"\n", op_prefix);
 
-    if (directorsEnabled()) {
+    if (Swig_directors_enabled()) {
       Printf(f_runtime, "#define SWIG_DIRECTORS\n");
       Swig_banner(f_directors_h);
       if (dirprot_mode()) {
@@ -224,7 +224,7 @@ public:
     if (Len(docs))
       emit_doc_texinfo();
 
-    if (directorsEnabled()) {
+    if (Swig_directors_enabled()) {
       Swig_insert_file("director_common.swg", f_runtime);
       Swig_insert_file("director.swg", f_runtime);
     }
@@ -237,7 +237,7 @@ public:
     Dump(f_runtime, f_begin);
     Dump(f_header, f_begin);
     Dump(f_doc, f_begin);
-    if (directorsEnabled()) {
+    if (Swig_directors_enabled()) {
       Dump(f_directors_h, f_begin);
       Dump(f_directors, f_begin);
     }
@@ -567,6 +567,10 @@ public:
     Wrapper *f = NewWrapper();
     Octave_begin_function(n, f->def, iname, overname, !overloaded);
 
+    // Start default try block to execute
+    // cleanup code if exception is thrown
+    Printf(f->code, "try {\n");
+
     emit_parameter_variables(l, f);
     emit_attach_parmmaps(l, f);
     Setattr(n, "wrap:parms", l);
@@ -607,9 +611,7 @@ public:
         sprintf(source, "args(%d)", j);
         Setattr(p, "emit:input", source);
 
-        Replaceall(tm, "$source", Getattr(p, "emit:input"));
         Replaceall(tm, "$input", Getattr(p, "emit:input"));
-        Replaceall(tm, "$target", Getattr(p, "lname"));
 
         if (Getattr(p, "wrap:disown") || (Getattr(p, "tmap:in:disown"))) {
           Replaceall(tm, "$disown", "SWIG_POINTER_DISOWN");
@@ -654,7 +656,6 @@ public:
     // Insert constraint checking code
     for (p = l; p;) {
       if ((tm = Getattr(p, "tmap:check"))) {
-        Replaceall(tm, "$target", Getattr(p, "lname"));
         Printv(f->code, tm, "\n", NIL);
         p = Getattr(p, "tmap:check:next");
       } else {
@@ -677,7 +678,6 @@ public:
           }
         }
         if (tm && (Len(tm) != 0)) {
-          Replaceall(tm, "$source", Getattr(p, "lname"));
           Printv(cleanup, tm, "\n", NIL);
         }
         p = Getattr(p, "tmap:freearg:next");
@@ -690,8 +690,6 @@ public:
     String *outarg = NewString("");
     for (p = l; p;) {
       if ((tm = Getattr(p, "tmap:argout"))) {
-        Replaceall(tm, "$source", Getattr(p, "lname"));
-        Replaceall(tm, "$target", "_outp");
         Replaceall(tm, "$result", "_outp");
         Replaceall(tm, "$arg", Getattr(p, "emit:input"));
         Replaceall(tm, "$input", Getattr(p, "emit:input"));
@@ -719,8 +717,6 @@ public:
 
     // Return the function value
     if ((tm = Swig_typemap_lookup_out("out", n, Swig_cresult_name(), f, actioncode))) {
-      Replaceall(tm, "$source", Swig_cresult_name());
-      Replaceall(tm, "$target", "_outv");
       Replaceall(tm, "$result", "_outv");
 
       if (GetFlag(n, "feature:new"))
@@ -741,22 +737,31 @@ public:
 
     if (GetFlag(n, "feature:new")) {
       if ((tm = Swig_typemap_lookup("newfree", n, Swig_cresult_name(), 0))) {
-        Replaceall(tm, "$source", Swig_cresult_name());
         Printf(f->code, "%s\n", tm);
       }
     }
 
     if ((tm = Swig_typemap_lookup("ret", n, Swig_cresult_name(), 0))) {
-      Replaceall(tm, "$source", Swig_cresult_name());
       Replaceall(tm, "$result", "_outv");
       Printf(f->code, "%s\n", tm);
       Delete(tm);
     }
 
     Printf(f->code, "return _out;\n");
-    Printf(f->code, "fail:\n");	// we should free locals etc if this happens
+
+    // Execute cleanup code if branched to fail: label
+    Printf(f->code, "fail:\n");
     Printv(f->code, cleanup, NIL);
     Printf(f->code, "return octave_value_list();\n");
+
+    // Execute cleanup code if exception was thrown
+    Printf(f->code, "}\n");
+    Printf(f->code, "catch(...) {\n");
+    Printv(f->code, cleanup, NIL);
+    Printf(f->code, "throw;\n");
+    Printf(f->code, "}\n");
+
+    // End wrapper function
     Printf(f->code, "}\n");
 
     /* Substitute the cleanup code */
@@ -800,7 +805,7 @@ public:
     Printf(tmp, "}");
     Wrapper_add_local(f, "argv", tmp);
     Printv(f->code, dispatch, "\n", NIL);
-    Printf(f->code, "error(\"No matching function for overload\");\n", iname);
+    Printf(f->code, "error(\"No matching function for overload\");\n");
     Printf(f->code, "return octave_value_list();\n");
     Printv(f->code, "}\n", NIL);
 
@@ -830,12 +835,10 @@ public:
     String *setwname = Swig_name_wrapper(setname);
 
     Octave_begin_function(n, setf->def, setname, setwname, true);
-    Printf(setf->def, "if (!SWIG_check_num_args(\"%s_set\",args.length(),1,1,0)) return octave_value_list();", iname);
-    if (is_assignable(n)) {
+    Printf(setf->code, "if (!SWIG_check_num_args(\"%s_set\",args.length(),1,1,0)) return octave_value_list();\n", iname);
+    if (!is_immutable(n)) {
       Setattr(n, "wrap:name", setname);
       if ((tm = Swig_typemap_lookup("varin", n, name, 0))) {
-        Replaceall(tm, "$source", "args(0)");
-        Replaceall(tm, "$target", name);
         Replaceall(tm, "$input", "args(0)");
         if (Getattr(n, "tmap:varin:implicitconv")) {
           Replaceall(tm, "$implicitconv", get_implicitconv_flag(n));
@@ -845,8 +848,9 @@ public:
       } else {
         Swig_warning(WARN_TYPEMAP_VARIN_UNDEF, input_file, line_number, "Unable to set variable of type %s.\n", SwigType_str(t, 0));
       }
+      Append(setf->code, "return octave_value_list();\n");
       Append(setf->code, "fail:\n");
-      Printf(setf->code, "return octave_value_list();\n");
+      Append(setf->code, "return octave_value_list();\n");
     } else {
       Printf(setf->code, "return octave_set_immutable(args,nargout);");
     }
@@ -858,18 +862,16 @@ public:
     Octave_begin_function(n, getf->def, getname, getwname, true);
     Wrapper_add_local(getf, "obj", "octave_value obj");
     if ((tm = Swig_typemap_lookup("varout", n, name, 0))) {
-      Replaceall(tm, "$source", name);
-      Replaceall(tm, "$target", "obj");
       Replaceall(tm, "$result", "obj");
       addfail = emit_action_code(n, getf->code, tm);
       Delete(tm);
     } else {
       Swig_warning(WARN_TYPEMAP_VAROUT_UNDEF, input_file, line_number, "Unable to read variable of type %s\n", SwigType_str(t, 0));
     }
-    Append(getf->code, "  return obj;\n");
+    Append(getf->code, "return obj;\n");
     if (addfail) {
       Append(getf->code, "fail:\n");
-      Append(getf->code, "  return octave_value_list();\n");
+      Append(getf->code, "return octave_value_list();\n");
     }
     Append(getf->code, "}\n");
     Wrapper_print(getf, f_wrappers);
@@ -904,8 +906,6 @@ public:
       value = wname;
     }
     if ((tm = Swig_typemap_lookup("constcode", n, name, 0))) {
-      Replaceall(tm, "$source", value);
-      Replaceall(tm, "$target", name);
       Replaceall(tm, "$value", cppvalue ? cppvalue : value);
       Replaceall(tm, "$nsname", iname);
       Printf(f_init, "%s\n", tm);
@@ -946,7 +946,7 @@ public:
     // This is a bug, due to the fact that swig_type -> octave_class mapping
     // is 1-to-n.
     static Hash *emitted = NewHash();
-    String *mangled_classname = Swig_name_mangle(Getattr(n, "name"));
+    String *mangled_classname = Swig_name_mangle_type(Getattr(n, "name"));
     if (Getattr(emitted, mangled_classname)) {
       Delete(mangled_classname);
       return SWIG_NOWRAP;
@@ -964,13 +964,14 @@ public:
     SwigType_add_pointer(t);
 
     // Replace storing a pointer to underlying class with a smart pointer (intended for use with non-intrusive smart pointers)
-    SwigType *smart = Swig_cparse_smartptr(n);
+    SwigType *smart = Getattr(n, "smart");
     String *wrap_class = NewStringf("&_wrap_class_%s", class_name);
     if (smart) {
-      SwigType_add_pointer(smart);
-      SwigType_remember_clientdata(smart, wrap_class);
+      SwigType *psmart = Copy(smart);
+      SwigType_add_pointer(psmart);
+      SwigType_remember_clientdata(psmart, wrap_class);
+      Delete(psmart);
     }
-    //String *wrap_class = NewStringf("&_wrap_class_%s", class_name);
     SwigType_remember_clientdata(t, wrap_class);
 
     int use_director = Swig_directorclass(n);
@@ -1003,7 +1004,6 @@ public:
     List *baselist = Getattr(n, "bases");
     if (baselist && Len(baselist)) {
       Iterator b;
-      int index = 0;
       b = First(baselist);
       while (b.item) {
         String *bname = Getattr(b.item, "name");
@@ -1016,7 +1016,6 @@ public:
         Printf(base_class_names, "\"%s\",", bname_mangled);
         Printf(base_class, "0,");
         b = Next(b);
-        index++;
         Delete(bname_mangled);
       }
     }
@@ -1049,7 +1048,6 @@ public:
 
     Delete(base_class);
     Delete(base_class_names);
-    Delete(smart);
     Delete(t);
     Delete(s_members_tab);
     s_members_tab = 0;

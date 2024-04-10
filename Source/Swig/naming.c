@@ -4,7 +4,7 @@
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
  * included with the SWIG source code as distributed by the SWIG developers
- * and at http://www.swig.org/legal.html.
+ * and at https://www.swig.org/legal.html.
  *
  * naming.c
  *
@@ -157,20 +157,167 @@ static void replace_nspace(String *name, const_String_or_char_ptr nspace) {
 }
 
 /* -----------------------------------------------------------------------------
- * Swig_name_mangle()
- *
- * Converts all of the non-identifier characters of a string to underscores.
+ * Swig_name_mangle_type()
+ * 
+ * Same as Swig_name_mangle_string, but converting internal SwigType * to a human
+ * readable string of the type (for templates). Simplifies a type that is a
+ * template to the default template if possible.
  * ----------------------------------------------------------------------------- */
 
-String *Swig_name_mangle(const_String_or_char_ptr s) {
-#if 0
-  String *r = NewString(s);
-  name_mangle(r);
-  return r;
-#else
-  return Swig_string_mangle(s);
-#endif
+String *Swig_name_mangle_type(const SwigType *s) {
+  String *mangled = 0;
+  String *b = Copy(s);
+  if (SwigType_istemplate(b)) {
+    String *st = Swig_symbol_template_deftype(b, 0);
+    String *sq = Swig_symbol_type_qualify(st, 0);
+    String *t = SwigType_namestr(sq);
+    Delete(st);
+    Delete(sq);
+    Delete(b);
+    b = t;
+  }
+  mangled = Swig_name_mangle_string(b);
+  Delete(b);
+  return mangled;
 }
+
+/* -----------------------------------------------------------------------------
+ * Swig_name_mangle_string()
+ * 
+ * Take a string and mangle it by stripping all non-valid C identifier
+ * characters.
+ *
+ * This routine skips unnecessary blank spaces, therefore mangling
+ * 'char *' and 'char*', 'std::pair<int, int >' and
+ * 'std::pair<int,int>', produce the same result.
+ *
+ * However, note that 'long long' and 'long_long' produce different
+ * mangled strings.
+ *
+ * The mangling method still is not 'perfect', for example std::pair and
+ * std_pair return the same mangling. This is just a little better
+ * than before, but it seems to be enough for most of the purposes.
+ *
+ * Having a perfect mangling will break some examples and code which
+ * assume, for example, that A::get_value will be mangled as
+ * A_get_value. 
+ * ----------------------------------------------------------------------------- */
+
+String *Swig_name_mangle_string(const String *s) {
+  String *result = NewStringEmpty();
+  int space = 0;
+  int state = 0;
+  char *pc, *cb;
+
+  pc = cb = Char(s);
+  while (*pc) {
+    char c = *pc;
+    if (isalnum((int) c) || (c == '_')) {
+      state = 1;
+      if (space && (space == state)) {
+	Append(result, "_SS_");
+      }
+      space = 0;
+      Printf(result, "%c", (int) c);
+
+    } else {
+      if (isspace((int) c)) {
+	space = state;
+	++pc;
+	continue;
+      } else {
+	state = 3;
+	space = 0;
+      }
+      switch (c) {
+      case '.':
+	if ((cb != pc) && (*(pc - 1) == 'p')) {
+	  Append(result, "_");
+	  ++pc;
+	  continue;
+	} else {
+	  c = 'f';
+	}
+	break;
+      case ':':
+	if (*(pc + 1) == ':') {
+	  Append(result, "_");
+	  ++pc;
+	  ++pc;
+	  continue;
+	}
+	break;
+      case '*':
+	c = 'm';
+	break;
+      case '&':
+	c = 'A';
+	break;
+      case '<':
+	c = 'l';
+	break;
+      case '>':
+	c = 'g';
+	break;
+      case '=':
+	c = 'e';
+	break;
+      case ',':
+	c = 'c';
+	break;
+      case '(':
+	c = 'p';
+	break;
+      case ')':
+	c = 'P';
+	break;
+      case '[':
+	c = 'b';
+	break;
+      case ']':
+	c = 'B';
+	break;
+      case '^':
+	c = 'x';
+	break;
+      case '|':
+	c = 'o';
+	break;
+      case '~':
+	c = 'n';
+	break;
+      case '!':
+	c = 'N';
+	break;
+      case '%':
+	c = 'M';
+	break;
+      case '?':
+	c = 'q';
+	break;
+      case '+':
+	c = 'a';
+	break;
+      case '-':
+	c = 's';
+	break;
+      case '/':
+	c = 'd';
+	break;
+      default:
+	break;
+      }
+      if (isalpha((int) c)) {
+	Printf(result, "_S%c_", (int) c);
+      } else {
+	Printf(result, "_S%02X_", (int) c);
+      }
+    }
+    ++pc;
+  }
+  return result;
+}
+
 
 /* -----------------------------------------------------------------------------
  * Swig_name_wrapper()
@@ -196,9 +343,11 @@ String *Swig_name_wrapper(const_String_or_char_ptr fname) {
 String *Swig_name_member(const_String_or_char_ptr nspace, const_String_or_char_ptr classname, const_String_or_char_ptr membername) {
   String *r;
   String *rclassname;
+  String *rmembername;
   char *cname;
 
   rclassname = SwigType_namestr(classname);
+  rmembername = SwigType_namestr(membername);
   r = get_naming_format_for("member", "%n%c_%m");
   cname = Char(rclassname);
   if ((strncmp(cname, "struct ", 7) == 0) || ((strncmp(cname, "class ", 6) == 0)) || ((strncmp(cname, "union ", 6) == 0))) {
@@ -206,9 +355,10 @@ String *Swig_name_member(const_String_or_char_ptr nspace, const_String_or_char_p
   }
   replace_nspace(r, nspace);
   Replace(r, "%c", cname, DOH_REPLACE_ANY);
-  Replace(r, "%m", membername, DOH_REPLACE_ANY);
+  Replace(r, "%m", rmembername, DOH_REPLACE_ANY);
   /*  name_mangle(r); */
   Delete(rclassname);
+  Delete(rmembername);
   return r;
 }
 
@@ -744,28 +894,28 @@ void Swig_feature_set(Hash *features, const_String_or_char_ptr name, SwigType *d
  * ----------------------------------------------------------------------------- */
 
 static Hash *namewarn_hash = 0;
-static Hash *name_namewarn_hash() {
+static Hash *name_namewarn_hash(void) {
   if (!namewarn_hash)
     namewarn_hash = NewHash();
   return namewarn_hash;
 }
 
 static Hash *rename_hash = 0;
-static Hash *name_rename_hash() {
+static Hash *name_rename_hash(void) {
   if (!rename_hash)
     rename_hash = NewHash();
   return rename_hash;
 }
 
 static List *namewarn_list = 0;
-static List *name_namewarn_list() {
+static List *name_namewarn_list(void) {
   if (!namewarn_list)
     namewarn_list = NewList();
   return namewarn_list;
 }
 
 static List *rename_list = 0;
-static List *name_rename_list() {
+static List *name_rename_list(void) {
   if (!rename_list)
     rename_list = NewList();
   return rename_list;
@@ -822,8 +972,8 @@ static int nodes_are_equivalent(Node *a, Node *b, int a_inclass) {
     }
   }
 
-  if (Cmp(ta, "cdecl") == 0) {
-    /* both cdecl case */
+  if (Equal(ta, "cdecl") || Equal(ta, "constructor")) {
+    /* both cdecl or constructor case */
     /* typedef */
     String *a_storage = Getattr(a, "storage");
     String *b_storage = Getattr(b, "storage");
@@ -847,7 +997,7 @@ static int nodes_are_equivalent(Node *a, Node *b, int a_inclass) {
 
     /* friend methods */
 
-    if (!a_inclass || (Cmp(a_storage, "friend") == 0)) {
+    if (!a_inclass || Strstr(a_storage, "friend")) {
       /* check declaration */
 
       String *a_decl = (Getattr(a, "decl"));
@@ -906,7 +1056,7 @@ static int nodes_are_equivalent(Node *a, Node *b, int a_inclass) {
       return 0;
     }
     if (Equal(ta, "template") && Equal(tb, "template")) {
-      if (Cmp(a_storage, "friend") == 0 || Cmp(b_storage, "friend") == 0)
+      if (Strstr(a_storage, "friend") || Strstr(b_storage, "friend"))
 	return 1;
     }
   }
@@ -1092,33 +1242,39 @@ static DOH *get_lattr(Node *n, List *lattr) {
 }
 
 #ifdef HAVE_PCRE
-#include <pcre.h>
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 static int name_regexmatch_value(Node *n, String *pattern, String *s) {
-  pcre *compiled_pat;
-  const char *err;
-  int errpos;
+  pcre2_code *compiled_pat;
+  PCRE2_UCHAR err[256];
+  int errornum;
+  size_t errpos;
   int rc;
+  pcre2_match_data *match_data = 0;
 
-  compiled_pat = pcre_compile(Char(pattern), 0, &err, &errpos, NULL);
+  compiled_pat = pcre2_compile((PCRE2_SPTR8)Char(pattern), PCRE2_ZERO_TERMINATED, 0, &errornum, &errpos, NULL);
   if (!compiled_pat) {
+    pcre2_get_error_message (errornum, err, sizeof err);
     Swig_error("SWIG", Getline(n),
                "Invalid regex \"%s\": compilation failed at %d: %s\n",
                Char(pattern), errpos, err);
-    SWIG_exit(EXIT_FAILURE);
+    Exit(EXIT_FAILURE);
   }
 
-  rc = pcre_exec(compiled_pat, NULL, Char(s), Len(s), 0, 0, NULL, 0);
-  pcre_free(compiled_pat);
+  match_data = pcre2_match_data_create_from_pattern (compiled_pat, NULL);
+  rc = pcre2_match(compiled_pat, (PCRE2_SPTR8)Char(s), PCRE2_ZERO_TERMINATED, 0, 0, match_data, 0);
+  pcre2_code_free(compiled_pat);
+  pcre2_match_data_free(match_data);
 
-  if (rc == PCRE_ERROR_NOMATCH)
+  if (rc == PCRE2_ERROR_NOMATCH)
     return 0;
 
   if (rc < 0 ) {
     Swig_error("SWIG", Getline(n),
                "Matching \"%s\" against regex \"%s\" failed: %d\n",
                Char(s), Char(pattern), rc);
-    SWIG_exit(EXIT_FAILURE);
+    Exit(EXIT_FAILURE);
   }
 
   return 1;
@@ -1131,7 +1287,8 @@ static int name_regexmatch_value(Node *n, String *pattern, String *s) {
   (void)s;
   Swig_error("SWIG", Getline(n),
              "PCRE regex matching is not available in this SWIG build.\n");
-  SWIG_exit(EXIT_FAILURE);
+  Exit(EXIT_FAILURE);
+  return 0;
 }
 
 #endif /* HAVE_PCRE/!HAVE_PCRE */
@@ -1510,20 +1667,30 @@ String *Swig_name_make(Node *n, String *prefix, const_String_or_char_ptr cname, 
 	result = apply_rename(n, rename, fullname, prefix, name);
 	if ((msg) && (Len(msg))) {
 	  if (!Getmeta(nname, "already_warned")) {
+	    String* suffix = 0;
+	    if (Strcmp(result, "$ignore") == 0) {
+	      suffix = NewStringf(": ignoring '%s'\n", name);
+	    } else if (Strcmp(result, name) != 0) {
+	      suffix = NewStringf(", renaming to '%s'\n", result);
+	    } else {
+	      /* No rename was performed */
+	      suffix = NewString("\n");
+	    }
 	    if (n) {
 	      /* Parameter renaming is not fully implemented. Mainly because there is no C/C++ syntax to
 	       * for %rename to fully qualify a function's parameter name from outside the function. Hence it
-	       * is not possible to implemented targetted warning suppression on one parameter in one function. */
+	       * is not possible to implemented targeted warning suppression on one parameter in one function. */
 	      int suppress_parameter_rename_warning = Equal(nodeType(n), "parm");
 	      if (!suppress_parameter_rename_warning) {
 		SWIG_WARN_NODE_BEGIN(n);
-		Swig_warning(0, Getfile(n), Getline(n), "%s\n", msg);
+	      Swig_warning(0, Getfile(n), Getline(n), "%s%s", msg, suffix);
 		SWIG_WARN_NODE_END(n);
 	      }
 	    } else {
-	      Swig_warning(0, Getfile(name), Getline(name), "%s\n", msg);
+	      Swig_warning(0, Getfile(name), Getline(name), "%s%s", msg, suffix);
 	    }
 	    Setmeta(nname, "already_warned", "1");
+	    Delete(suffix);
 	  }
 	}
       }
@@ -1686,29 +1853,31 @@ String *Swig_name_str(Node *n) {
  * void Swig_name_decl()
  *
  * Return a stringified version of a C/C++ declaration without the return type.
- * The node passed in is expected to be a function, constructor, destructor or
- * variable. Some example return values:
+ * The node passed in is usually a function, constructor, destructor.
+ * Other nodes result in a simple fully qualified string of the symbol.
+ * Some example return values:
  *   "MyNameSpace::MyTemplate<MyNameSpace::ABC >::~MyTemplate()"
  *   "MyNameSpace::ABC::ABC(int,double)"
  *   "MyNameSpace::ABC::constmethod(int) const"
  *   "MyNameSpace::ABC::refqualifiermethod(int) const &"
  *   "MyNameSpace::ABC::variablename"
- * 
+ *   "MyNameSpace::ABC::MyClass"
  * ----------------------------------------------------------------------------- */
 
 String *Swig_name_decl(Node *n) {
   String *qname;
   String *decl;
+  String *nodetype = nodeType(n);
 
   qname = Swig_name_str(n);
   decl = NewStringf("%s", qname);
 
-  if (!checkAttribute(n, "kind", "variable")) {
+  if (nodetype && (Equal(nodetype, "constructor") || Equal(nodetype, "destructor") || Equal(nodetype, "cdecl"))) {
     String *d = Getattr(n, "decl");
-    Printv(decl, "(", ParmList_errorstr(Getattr(n, "parms")), ")", NIL);
     if (SwigType_isfunction(d)) {
       SwigType *decl_temp = Copy(d);
       SwigType *qualifiers = SwigType_pop_function_qualifiers(decl_temp);
+      Printv(decl, "(", ParmList_errorstr(Getattr(n, "parms")), ")", NIL);
       if (qualifiers) {
 	String *qualifiers_string = SwigType_str(qualifiers, 0);
 	Printv(decl, " ", qualifiers_string, NIL);

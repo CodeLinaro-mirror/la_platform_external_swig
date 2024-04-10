@@ -4,7 +4,7 @@
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
  * included with the SWIG source code as distributed by the SWIG developers
- * and at http://www.swig.org/legal.html.
+ * and at https://www.swig.org/legal.html.
  *
  * swigwarn.h
  *
@@ -22,38 +22,38 @@
  * This file is used as the input for generating Lib/swigwarn.swg.
  * ----------------------------------------------------------------------------- */
 
-#ifndef SWIGWARN_H_
-#define SWIGWARN_H_
+#ifndef SWIG_SWIGWARN_H
+#define SWIG_SWIGWARN_H
 
 #define WARN_NONE                     0
 
 /* -- Deprecated features -- */
 
-#define WARN_DEPRECATED_EXTERN        101
-#define WARN_DEPRECATED_VAL           102
-#define WARN_DEPRECATED_OUT           103
-#define WARN_DEPRECATED_DISABLEDOC    104
-#define WARN_DEPRECATED_ENABLEDOC     105
-#define WARN_DEPRECATED_DOCONLY       106
-#define WARN_DEPRECATED_STYLE         107
-#define WARN_DEPRECATED_LOCALSTYLE    108
-#define WARN_DEPRECATED_TITLE         109
-#define WARN_DEPRECATED_SECTION       110
-#define WARN_DEPRECATED_SUBSECTION    111
-#define WARN_DEPRECATED_SUBSUBSECTION 112
-#define WARN_DEPRECATED_ADDMETHODS    113
-#define WARN_DEPRECATED_READONLY      114
-#define WARN_DEPRECATED_READWRITE     115
-#define WARN_DEPRECATED_EXCEPT        116
-#define WARN_DEPRECATED_NEW           117
-#define WARN_DEPRECATED_EXCEPT_TM     118
-#define WARN_DEPRECATED_IGNORE_TM     119
-#define WARN_DEPRECATED_OPTC          120
-#define WARN_DEPRECATED_NAME          121
-#define WARN_DEPRECATED_NOEXTERN      122
-#define WARN_DEPRECATED_NODEFAULT     123
-#define WARN_DEPRECATED_TYPEMAP_LANG  124
-#define WARN_DEPRECATED_INPUT_FILE    125
+/* Unused since 4.2.0: #define WARN_DEPRECATED_EXTERN        101 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_VAL           102 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_OUT           103 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_DISABLEDOC    104 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_ENABLEDOC     105 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_DOCONLY       106 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_STYLE         107 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_LOCALSTYLE    108 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_TITLE         109 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_SECTION       110 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_SUBSECTION    111 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_SUBSUBSECTION 112 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_ADDMETHODS    113 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_READONLY      114 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_READWRITE     115 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_EXCEPT        116 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_NEW           117 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_EXCEPT_TM     118 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_IGNORE_TM     119 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_OPTC          120 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_NAME          121 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_NOEXTERN      122 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_NODEFAULT     123 */
+/* Unused since 4.1.0: #define WARN_DEPRECATED_TYPEMAP_LANG  124 */
+/* Unused since 4.2.0: #define WARN_DEPRECATED_INPUT_FILE    125 */
 #define WARN_DEPRECATED_NESTED_WORKAROUND 126
 
 /* -- Preprocessor -- */
@@ -72,17 +72,17 @@
 #define WARN_PARSE_EXTEND_UNDEF       303
 #define WARN_PARSE_UNSUPPORTED_VALUE  304
 #define WARN_PARSE_BAD_VALUE          305
-#define WARN_PARSE_PRIVATE            306
-#define WARN_PARSE_BAD_DEFAULT        307
+/* Unused since 1.3.32: #define WARN_PARSE_PRIVATE            306 */
+/* Unused since 4.2.0: #define WARN_PARSE_BAD_DEFAULT        307 */
 #define WARN_PARSE_NAMESPACE_ALIAS    308
 #define WARN_PARSE_PRIVATE_INHERIT    309
-#define WARN_PARSE_TEMPLATE_REPEAT    310
-#define WARN_PARSE_TEMPLATE_PARTIAL   311
+/* Unused since 1.3.18: #define WARN_PARSE_TEMPLATE_REPEAT    310 */
+/* Unused since 1.3.18: #define WARN_PARSE_TEMPLATE_PARTIAL   311 */
 #define WARN_PARSE_UNNAMED_NESTED_CLASS 312
 #define WARN_PARSE_UNDEFINED_EXTERN   313
 #define WARN_PARSE_KEYWORD            314
 #define WARN_PARSE_USING_UNDEF        315
-#define WARN_PARSE_MODULE_REPEAT      316
+/* Unused since 1.3.18: #define WARN_PARSE_MODULE_REPEAT      316 */
 #define WARN_PARSE_TEMPLATE_SP_UNDEF  317
 #define WARN_PARSE_TEMPLATE_AMBIG     318
 #define WARN_PARSE_NO_ACCESS          319
@@ -93,11 +93,17 @@
 #define WARN_PARSE_NESTED_TEMPLATE    324
 #define WARN_PARSE_NAMED_NESTED_CLASS 325
 #define WARN_PARSE_EXTEND_NAME        326
+#define WARN_PARSE_EXTERN_TEMPLATE    327
+#define WARN_PARSE_ASSIGNED_VALUE     328
+#define WARN_PARSE_USING_CONSTRUCTOR  329
 
 #define WARN_CPP11_LAMBDA             340
-#define WARN_CPP11_ALIAS_DECLARATION  341  /* redundant now */
-#define WARN_CPP11_ALIAS_TEMPLATE     342  /* redundant now */
-#define WARN_CPP11_VARIADIC_TEMPLATE  343
+/* Unused since 3.0.11: #define WARN_CPP11_ALIAS_DECLARATION  341 */
+/* Unused since 3.0.11: #define WARN_CPP11_ALIAS_TEMPLATE     342 */
+/* Unused since 4.2.0: #define WARN_CPP11_VARIADIC_TEMPLATE  343 */
+#define WARN_CPP11_DECLTYPE           344
+#define WARN_CPP14_AUTO               345
+#define WARN_CPP11_AUTO               346
 
 #define WARN_IGNORE_OPERATOR_NEW        350	/* new */
 #define WARN_IGNORE_OPERATOR_DELETE     351	/* delete */
@@ -146,8 +152,9 @@
 #define WARN_IGNORE_OPERATOR_NEWARR     394	/* new [] */
 #define WARN_IGNORE_OPERATOR_DELARR     395	/* delete [] */
 #define WARN_IGNORE_OPERATOR_REF        396	/* operator *() */
+#define WARN_IGNORE_OPERATOR_LTEQUALGT  397	/* <=> */
 
-/* 394-399 are reserved */
+/* please leave 350-399 free for WARN_IGNORE_OPERATOR_* */
 
 /* -- Type system and typemaps -- */
 
@@ -157,11 +164,12 @@
 #define WARN_TYPE_REDEFINED           404
 #define WARN_TYPE_RVALUE_REF_QUALIFIER_IGNORED 405
 
-#define WARN_TYPEMAP_SOURCETARGET     450
+/* Unused since 4.1.0: #define WARN_TYPEMAP_SOURCETARGET     450 */
 #define WARN_TYPEMAP_CHARLEAK         451
-#define WARN_TYPEMAP_SWIGTYPE         452
+/* Unused since 1.3.32: #define WARN_TYPEMAP_SWIGTYPE         452 */
 #define WARN_TYPEMAP_APPLY_UNDEF      453
 #define WARN_TYPEMAP_SWIGTYPELEAK     454
+#define WARN_TYPEMAP_WCHARLEAK        455
 
 #define WARN_TYPEMAP_IN_UNDEF         460
 #define WARN_TYPEMAP_OUT_UNDEF        461
@@ -196,7 +204,7 @@
 #define WARN_LANG_NATIVE_UNIMPL       507
 #define WARN_LANG_DEREF_SHADOW        508
 #define WARN_LANG_OVERLOAD_SHADOW     509
-#define WARN_LANG_FRIEND_IGNORE       510
+#define WARN_LANG_FRIEND_IGNORE       510 /* No longer issued */
 #define WARN_LANG_OVERLOAD_KEYWORD    511
 #define WARN_LANG_OVERLOAD_CONST      512
 #define WARN_LANG_CLASS_UNNAMED       513
@@ -212,6 +220,7 @@
 #define WARN_LANG_EXTEND_DESTRUCTOR   523
 #define WARN_LANG_EXPERIMENTAL        524
 #define WARN_LANG_DIRECTOR_FINAL      525
+#define WARN_LANG_USING_NAME_DIFFERENT 526
 
 /* -- Doxygen comments -- */
 
@@ -223,7 +232,7 @@
 #define WARN_DOXYGEN_UNKNOWN_CHARACTER        565
 #define WARN_DOXYGEN_UNEXPECTED_ITERATOR_VALUE  566
 
-/* -- Reserved (600-799) -- */
+/* -- Reserved (600-699) -- */
 
 /* -- Language module specific warnings (700 - 899) -- */
 
@@ -253,7 +262,12 @@
 
 #define WARN_PYTHON_INDENT_MISMATCH           740
 
-/* please leave 740-759 free for Python */
+/* please leave 740-749 free for Python */
+
+/* Unused since 4.2.0: #define WARN_R_MISSING_RTYPECHECK_TYPEMAP     750 */
+#define WARN_R_TYPEMAP_RTYPECHECK_UNDEF       751
+
+/* please leave 750-759 free for R */
 
 #define WARN_RUBY_WRONG_NAME                  801
 #define WARN_RUBY_MULTIPLE_INHERITANCE        802
@@ -277,6 +291,7 @@
 #define WARN_JAVA_TYPEMAP_DIRECTORIN_NODESC   824
 #define WARN_JAVA_NO_DIRECTORCONNECT_ATTR     825
 #define WARN_JAVA_NSPACE_WITHOUT_PACKAGE      826
+#define WARN_JAVA_TYPEMAP_INTERFACEMODIFIERS_UNDEF 827
 
 /* please leave 810-829 free for Java */
 
@@ -297,26 +312,15 @@
 #define WARN_CSHARP_EXCODE                    844
 #define WARN_CSHARP_CANTHROW                  845
 #define WARN_CSHARP_NO_DIRECTORCONNECT_ATTR   846
+#define WARN_CSHARP_TYPEMAP_INTERFACEMODIFIERS_UNDEF 847
 
 /* please leave 830-849 free for C# */
 
-#define WARN_MODULA3_TYPEMAP_TYPE_UNDEF        850
-#define WARN_MODULA3_TYPEMAP_GETCPTR_UNDEF     851
-#define WARN_MODULA3_TYPEMAP_CLASSMOD_UNDEF    852
-#define WARN_MODULA3_TYPEMAP_PTRCONSTMOD_UNDEF 853
-#define WARN_MODULA3_TYPEMAP_MULTIPLE_RETURN   854
-#define WARN_MODULA3_MULTIPLE_INHERITANCE      855
-#define WARN_MODULA3_TYPECONSTRUCTOR_UNKNOWN   856
-#define WARN_MODULA3_UNKNOWN_PRAGMA            857
-#define WARN_MODULA3_BAD_ENUMERATION           858
-#define WARN_MODULA3_DOUBLE_ID                 859
-#define WARN_MODULA3_BAD_IMPORT                860
-
-/* please leave 850-869 free for Modula 3 */
+/* 850-860 were used by Modula 3 (removed in SWIG 4.1.0) - avoid reusing for now */
 
 #define WARN_PHP_MULTIPLE_INHERITANCE         870
 #define WARN_PHP_UNKNOWN_PRAGMA               871
-#define WARN_PHP_PUBLIC_BASE                  872
+/* Unused since 4.1.0: define WARN_PHP_PUBLIC_BASE                  872 */
 
 /* please leave 870-889 free for PHP */
 

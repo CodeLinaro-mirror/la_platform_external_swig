@@ -58,6 +58,7 @@ If not: SOMECONDITION {
 }
 
 Image: testImage.bmp("Hello, world!")
+Image: "test image.jpg"("Test jpeg")
 
 
 
@@ -80,7 +81,7 @@ is the note!
 This is an overloaded member function, provided for convenience.
 It differs from the above function only in what argument(s) it accepts.
 
-someword
+``someword``
 
 
 

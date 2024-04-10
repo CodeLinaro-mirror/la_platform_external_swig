@@ -9,10 +9,10 @@ third_party {
     type: GIT
     value: "https://github.com/swig/swig.git"
   }
-  version: "rel-4.0.1"
+  version: "v4.2.1"
   last_upgrade_date {
-    year: 2019
-    month: 10
-    day: 18
+    year: 2024
+    month: 04
+    day: 11
   }
 }

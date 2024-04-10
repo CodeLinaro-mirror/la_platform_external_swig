@@ -4,7 +4,7 @@
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
  * included with the SWIG source code as distributed by the SWIG developers
- * and at http://www.swig.org/legal.html.
+ * and at https://www.swig.org/legal.html.
  *
  * typepass.cxx
  *
@@ -253,47 +253,35 @@ class TypePass:private Dispatcher {
     int len = Len(ilist);
     int i;
     for (i = 0; i < len; i++) {
-      Node *n = Getitem(ilist, i);
-      String *bname = Getattr(n, "name");
-      Node *bclass = n;		/* Getattr(n,"class"); */
+      Node *bclass = Getitem(ilist, i);
+      SwigType *bname = Getattr(bclass, "name");
       Hash *scopes = Getattr(bclass, "typescope");
       SwigType_inherit(clsname, bname, cast, 0);
       if (ispublic && !GetFlag(bclass, "feature:ignore")) {
-	String *smartptr = Getattr(first, "feature:smartptr");
-	if (smartptr) {
-	  SwigType *smart = Swig_cparse_smartptr(first);
-	  if (smart) {
-	    /* Record a (fake) inheritance relationship between smart pointer
-	       and smart pointer to base class, so that smart pointer upcasts
-	       are automatically generated. */
-	    SwigType *bsmart = Copy(smart);
-	    SwigType *rclsname = SwigType_typedef_resolve_all(clsname);
-	    SwigType *rbname = SwigType_typedef_resolve_all(bname);
-	    int replace_count = Replaceall(bsmart, rclsname, rbname);
-	    if (replace_count == 0) {
-	      // If no replacement made, it will be because rclsname is fully resolved, but the
-	      // type in the smartptr feature used a typedef or not fully resolved name.
-	      String *firstname = Getattr(first, "name");
-	      Replaceall(bsmart, firstname, rbname);
-	    }
-	    Delete(rclsname);
-	    Delete(rbname);
+	String *smart = Getattr(first, "smart");
+	if (smart) {
+	  /* Record a (fake) inheritance relationship between smart pointer
+	     and smart pointer to base class, so that smart pointer upcasts
+	     are automatically generated. */
+	  SwigType *bsmart = Getattr(bclass, "smart");
+	  if (bsmart) {
 	    String *smartnamestr = SwigType_namestr(smart);
 	    String *bsmartnamestr = SwigType_namestr(bsmart);
+
 	    /* construct casting code */
 	    String *convcode = NewStringf("\n    *newmemory = SWIG_CAST_NEW_MEMORY;\n    return (void *) new %s(*(%s *)$from);\n", bsmartnamestr, smartnamestr);
-	    Delete(bsmartnamestr);
-	    Delete(smartnamestr);
+
 	    /* setup inheritance relationship between smart pointer templates */
 	    SwigType_inherit(smart, bsmart, 0, convcode);
-	    if (!GetFlag(bclass, "feature:smartptr"))
-	      Swig_warning(WARN_LANG_SMARTPTR_MISSING, Getfile(first), Getline(first), "Base class '%s' of '%s' is not similarly marked as a smart pointer.\n", SwigType_namestr(Getattr(bclass, "name")), SwigType_namestr(Getattr(first, "name")));
+
+	    Delete(bsmartnamestr);
+	    Delete(smartnamestr);
 	    Delete(convcode);
-	    Delete(bsmart);
+	  } else {
+	    Swig_warning(WARN_LANG_SMARTPTR_MISSING, Getfile(first), Getline(first), "Base class '%s' of '%s' is not similarly marked as a smart pointer.\n", SwigType_namestr(Getattr(bclass, "name")), SwigType_namestr(Getattr(first, "name")));
 	  }
-	  Delete(smart);
 	} else {
-	  if (GetFlag(bclass, "feature:smartptr"))
+	  if (GetFlag(bclass, "smart"))
 	    Swig_warning(WARN_LANG_SMARTPTR_MISSING, Getfile(first), Getline(first), "Derived class '%s' of '%s' is not similarly marked as a smart pointer.\n", SwigType_namestr(Getattr(first, "name")), SwigType_namestr(Getattr(bclass, "name")));
 	}
       }
@@ -454,8 +442,10 @@ class TypePass:private Dispatcher {
 	    SwigType_typedef_class(fname);
 	    scopename = Copy(fname);
 	  } else {
-	    Swig_warning(WARN_TYPE_REDEFINED, Getfile(n), Getline(n), "Template '%s' was already wrapped,\n", SwigType_namestr(name));
-	    Swig_warning(WARN_TYPE_REDEFINED, Getfile(cn), Getline(cn), "previous wrap of '%s'.\n", SwigType_namestr(Getattr(cn, "name")));
+	    // Arguably the parser should instead ignore these duplicate template instantiations, in particular for ensuring the first parsed instantiation is used
+	    SetFlag(n, "feature:ignore");
+	    Swig_warning(WARN_TYPE_REDEFINED, Getfile(n), Getline(n), "Duplicate template instantiation of '%s' with name '%s' ignored,\n", SwigType_namestr(name), Getattr(n, "sym:name"));
+	    Swig_warning(WARN_TYPE_REDEFINED, Getfile(cn), Getline(cn), "previous instantiation of '%s' with name '%s'.\n", SwigType_namestr(Getattr(cn, "name")), Getattr(cn, "sym:name"));
 	    scopename = 0;
 	  }
 	} else {
@@ -509,6 +499,16 @@ class TypePass:private Dispatcher {
     }
     SwigType_new_scope(scopename);
     SwigType_attach_symtab(Getattr(n, "symtab"));
+
+    if (!GetFlag(n, "feature:ignore")) {
+      SwigType *smart = Swig_cparse_smartptr(n);
+      if (smart) {
+	// Resolve the type in 'feature:smartptr' in the scope of the class it is attached to
+	normalize_type(smart);
+	Setattr(n, "smart", smart);
+	Delete(smart);
+      }
+    }
 
     /* Inherit type definitions into the class */
     if (name && !(GetFlag(n, "nested") && !checkAttribute(n, "access", "public") && 
@@ -961,7 +961,7 @@ class TypePass:private Dispatcher {
       if (Getattr(c, "sym:overloaded") != checkoverloaded) {
         Printf(stdout, "sym:overloaded error c:%p checkoverloaded:%p\n", c, checkoverloaded);
         Swig_print_node(c);
-        SWIG_exit(EXIT_FAILURE);
+        Exit(EXIT_FAILURE);
       }
 
       String *decl = Strcmp(nodeType(c), "using") == 0 ? NewString("------") : Getattr(c, "decl");
@@ -969,7 +969,7 @@ class TypePass:private Dispatcher {
       if (!Getattr(c, "sym:overloaded")) {
         Printf(stdout, "sym:overloaded error.....%p\n", c);
         Swig_print_node(c);
-        SWIG_exit(EXIT_FAILURE);
+        Exit(EXIT_FAILURE);
       }
       c = Getattr(c, "sym:nextSibling");
     }
@@ -1011,189 +1011,16 @@ class TypePass:private Dispatcher {
       } else {
 	ns = 0;
       }
-      if (!ns) {
-	if (is_public(n)) {
-	  Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(n), Getline(n), "Nothing known about '%s'.\n", SwigType_namestr(Getattr(n, "uname")));
-	}
-      } else {
+      // Note that Allocate::usingDeclaration will warn when using member is not found (when ns is zero)
+      if (ns) {
 	/* Only a single symbol is being used.  There are only a few symbols that
 	   we actually care about.  These are typedef, class declarations, and enum */
 	String *ntype = nodeType(ns);
-	if (Strcmp(ntype, "cdecl") == 0) {
+	if (Equal(ntype, "cdecl") || Equal(ntype, "constructor")) {
 	  if (checkAttribute(ns, "storage", "typedef")) {
 	    /* A typedef declaration */
 	    String *uname = Getattr(n, "uname");
 	    SwigType_typedef_using(uname);
-	  } else {
-	    /* A normal C declaration. */
-	    if ((inclass) && (!GetFlag(n, "feature:ignore")) && (Getattr(n, "sym:name"))) {
-	      Node *c = ns;
-	      Node *unodes = 0, *last_unodes = 0;
-	      int ccount = 0;
-	      String *symname = Getattr(n, "sym:name");
-	      while (c) {
-		if (Strcmp(nodeType(c), "cdecl") == 0) {
-		  if (!(Swig_storage_isstatic(c)
-			|| checkAttribute(c, "storage", "typedef")
-			|| checkAttribute(c, "storage", "friend")
-			|| (Getattr(c, "feature:extend") && !Getattr(c, "code"))
-			|| GetFlag(c, "feature:ignore"))) {
-
-		    /* Don't generate a method if the method is overridden in this class, 
-		     * for example don't generate another m(bool) should there be a Base::m(bool) :
-		     * struct Derived : Base { 
-		     *   void m(bool);
-		     *   using Base::m;
-		     * };
-		     */
-		    String *csymname = Getattr(c, "sym:name");
-		    if (!csymname || (Strcmp(csymname, symname) == 0)) {
-		      {
-			String *decl = Getattr(c, "decl");
-			Node *over = Getattr(n, "sym:overloaded");
-			int match = 0;
-			while (over) {
-			  String *odecl = Getattr(over, "decl");
-			  if (Cmp(decl, odecl) == 0) {
-			    match = 1;
-			    break;
-			  }
-			  over = Getattr(over, "sym:nextSibling");
-			}
-			if (match) {
-			  c = Getattr(c, "csym:nextSibling");
-			  continue;
-			}
-		      }
-		      Node *nn = copyNode(c);
-		      Delattr(nn, "access");	// access might be different from the method in the base class
-		      Setattr(nn, "access", Getattr(n, "access"));
-		      if (!Getattr(nn, "sym:name"))
-			Setattr(nn, "sym:name", symname);
-
-		      if (!GetFlag(nn, "feature:ignore")) {
-			ParmList *parms = CopyParmList(Getattr(c, "parms"));
-			int is_pointer = SwigType_ispointer_return(Getattr(nn, "decl"));
-			int is_void = checkAttribute(nn, "type", "void") && !is_pointer;
-			Setattr(nn, "parms", parms);
-			Delete(parms);
-			if (Getattr(n, "feature:extend")) {
-			  String *ucode = is_void ? NewStringf("{ self->%s(", Getattr(n, "uname")) : NewStringf("{ return self->%s(", Getattr(n, "uname"));
-
-			  for (ParmList *p = parms; p;) {
-			    Append(ucode, Getattr(p, "name"));
-			    p = nextSibling(p);
-			    if (p)
-			      Append(ucode, ",");
-			  }
-			  Append(ucode, "); }");
-			  Setattr(nn, "code", ucode);
-			  Delete(ucode);
-			}
-			ParmList *throw_parm_list = Getattr(c, "throws");
-			if (throw_parm_list)
-			  Setattr(nn, "throws", CopyParmList(throw_parm_list));
-			ccount++;
-			if (!last_unodes) {
-			  last_unodes = nn;
-			  unodes = nn;
-			} else {
-			  Setattr(nn, "previousSibling", last_unodes);
-			  Setattr(last_unodes, "nextSibling", nn);
-			  Setattr(nn, "sym:previousSibling", last_unodes);
-			  Setattr(last_unodes, "sym:nextSibling", nn);
-			  Setattr(nn, "sym:overloaded", unodes);
-			  Setattr(unodes, "sym:overloaded", unodes);
-			  last_unodes = nn;
-			}
-		      } else {
-			Delete(nn);
-		      }
-		    }
-		  }
-		}
-		c = Getattr(c, "csym:nextSibling");
-	      }
-	      if (unodes) {
-		set_firstChild(n, unodes);
-		if (ccount > 1) {
-		  if (!Getattr(n, "sym:overloaded")) {
-		    Setattr(n, "sym:overloaded", n);
-		    Setattr(n, "sym:overname", "_SWIG_0");
-		  }
-		}
-	      }
-
-	      /* Hack the parse tree symbol table for overloaded methods. Replace the "using" node with the
-	       * list of overloaded methods we have just added in as child nodes to the "using" node.
-	       * The node will still exist, it is just the symbol table linked list of overloaded methods
-	       * which is hacked. */
-	      if (Getattr(n, "sym:overloaded")) {
-		int cnt = 0;
-#ifdef DEBUG_OVERLOADED
-		Node *debugnode = n;
-		show_overloaded(n);
-#endif
-		if (!firstChild(n)) {
-		  // Remove from overloaded list ('using' node does not actually end up adding in any methods)
-		  Node *ps = Getattr(n, "sym:previousSibling");
-		  Node *ns = Getattr(n, "sym:nextSibling");
-		  if (ps) {
-		    Setattr(ps, "sym:nextSibling", ns);
-		  }
-		  if (ns) {
-		    Setattr(ns, "sym:previousSibling", ps);
-		  }
-		} else {
-		  // The 'using' node results in methods being added in - slot in the these methods here 
-		  Node *ps = Getattr(n, "sym:previousSibling");
-		  Node *ns = Getattr(n, "sym:nextSibling");
-		  Node *fc = firstChild(n);
-		  Node *pp = fc;
-
-		  Node *firstoverloaded = Getattr(n, "sym:overloaded");
-		  if (firstoverloaded == n) {
-		    // This 'using' node we are cutting out was the first node in the overloaded list. 
-		    // Change the first node in the list to its first sibling
-		    Delattr(firstoverloaded, "sym:overloaded");
-		    Node *nnn = Getattr(firstoverloaded, "sym:nextSibling");
-		    firstoverloaded = fc;
-		    while (nnn) {
-		      Setattr(nnn, "sym:overloaded", firstoverloaded);
-		      nnn = Getattr(nnn, "sym:nextSibling");
-		    }
-		  }
-		  while (pp) {
-		    Node *ppn = Getattr(pp, "sym:nextSibling");
-		    Setattr(pp, "sym:overloaded", firstoverloaded);
-		    Setattr(pp, "sym:overname", NewStringf("%s_%d", Getattr(n, "sym:overname"), cnt++));
-		    if (ppn)
-		      pp = ppn;
-		    else
-		      break;
-		  }
-		  if (ps) {
-		    Setattr(ps, "sym:nextSibling", fc);
-		    Setattr(fc, "sym:previousSibling", ps);
-		  }
-		  if (ns) {
-		    Setattr(ns, "sym:previousSibling", pp);
-		    Setattr(pp, "sym:nextSibling", ns);
-		  }
-#ifdef DEBUG_OVERLOADED
-		  debugnode = firstoverloaded;
-#endif
-		}
-		Delattr(n, "sym:previousSibling");
-		Delattr(n, "sym:nextSibling");
-		Delattr(n, "sym:overloaded");
-		Delattr(n, "sym:overname");
-#ifdef DEBUG_OVERLOADED
-		show_overloaded(debugnode);
-#endif
-		clean_overloaded(n);	// Needed?
-	      }
-	    }
 	  }
 	} else if ((Strcmp(ntype, "class") == 0) || ((Strcmp(ntype, "classforward") == 0))) {
 	  /* We install the using class name as kind of a typedef back to the original class */

@@ -13,7 +13,7 @@
 #define HAVE_POPEN 1
 
 #define PACKAGE_BUGREPORT "http://www.swig.org"
-#define PACKAGE_VERSION "4.0.1"
+#define PACKAGE_VERSION "4.2.1"
 
 #define SWIG_CXX "clang"
 

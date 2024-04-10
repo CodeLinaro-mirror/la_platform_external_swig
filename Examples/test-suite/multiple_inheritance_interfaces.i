@@ -1,11 +1,10 @@
-%module  multiple_inheritance_interfaces
+%module(ruby_minherit="1") multiple_inheritance_interfaces
 
-%warnfilter(SWIGWARN_RUBY_MULTIPLE_INHERITANCE,
-	    SWIGWARN_D_MULTIPLE_INHERITANCE,
-	    SWIGWARN_PHP_MULTIPLE_INHERITANCE); /* languages not supporting multiple inheritance or %interface */
+%warnfilter(SWIGWARN_D_MULTIPLE_INHERITANCE,
+	    SWIGWARN_PHP_MULTIPLE_INHERITANCE); /* languages not supporting multiple inheritance */
 
 #if defined(SWIGJAVA) || defined(SWIGCSHARP)
-%include "swiginterface.i"
+%include <swiginterface.i>
 %interface_custom("A", "IA", IA)
 %interface_custom("B", "IB", IB)
 %interface_custom("%(strip:[I])s", "I%s", IC) // same as %interface_custom("C", "IC", IC)
@@ -51,6 +50,33 @@ struct W : T {};
 %}
 
 #if defined(SWIGJAVA) || defined(SWIGCSHARP)
+%interface_impl(Undesirables);
+#endif
+
+%inline %{
+// Don't put variables and enums into interface
+class Undesirables
+{
+public:
+  Undesirables() : UndesiredVariable() {}
+  virtual ~Undesirables() {}
+  virtual void Method(int i) = 0;
+
+  enum UndesiredEnum { UndesiredEnum1, UndesiredEnum2 };
+  static void UndesiredStaticMethod(UndesiredEnum e) {}
+  int UndesiredVariable;
+  static int UndesiredStaticVariable;
+  static const int UndesiredStaticConstVariable = 0;
+};
+
+int Undesirables::UndesiredStaticVariable = 0;
+
+struct UndesirablesDerived : Undesirables {
+  virtual void Method(int i) {}
+};
+%}
+
+#if defined(SWIGJAVA) || defined(SWIGCSHARP)
 %interface_impl(BaseOverloaded);
 #endif
 %inline %{
@@ -63,4 +89,33 @@ struct BaseOverloaded {
 struct DerivedOverloaded : public BaseOverloaded {
   virtual void identical_overload(int i, const PTypedef &p = PTypedef()) {}
 };
+%}
+
+
+#if defined(SWIGJAVA) || defined(SWIGCSHARP)
+%interface(Space::X)
+#endif
+
+// Test the csinterfacemodifiers and javainterfacemodifiers typemaps.
+#if defined(SWIGCSHARP)
+/* change access from default "public class" to "internal class" */
+%typemap(csclassmodifiers) InternalAccess "internal class"
+/* The following modifiers are also needed with the above access modifier change */
+%typemap(csclassmodifiers) Space::X "internal class"
+%typemap(csinterfacemodifiers) Space::X "internal interface"
+#elif defined(SWIGJAVA)
+%typemap(javaclassmodifiers) InternalAccess "final /*notpublic*/ class"
+%typemap(javaclassmodifiers) Space::X "final class"
+%typemap(javainterfacemodifiers) Space::X "/*notpublic*/ interface"
+#endif
+
+%inline %{
+struct InternalAccess {};
+namespace Space {
+  class X {
+  public:
+    virtual void x(const InternalAccess& date) const = 0;
+    virtual ~X() {}
+  };
+}
 %}

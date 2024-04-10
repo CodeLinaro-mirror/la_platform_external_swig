@@ -4,7 +4,7 @@
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
  * included with the SWIG source code as distributed by the SWIG developers
- * and at http://www.swig.org/legal.html.
+ * and at https://www.swig.org/legal.html.
  *
  * tcl8.cxx
  *
@@ -113,7 +113,7 @@ public:
 	} else if (strcmp(argv[i], "-nocppcast") == 0) {
 	  Printf(stderr, "Deprecated command line option: %s. This option is no longer supported.\n", argv[i]);
 	  Swig_mark_arg(i);
-	  SWIG_exit(EXIT_FAILURE);
+	  Exit(EXIT_FAILURE);
 	}
       }
     }
@@ -138,7 +138,7 @@ public:
     f_begin = NewFile(outfile, "w", SWIG_output_files());
     if (!f_begin) {
       FileErrorDisplay(outfile);
-      SWIG_exit(EXIT_FAILURE);
+      Exit(EXIT_FAILURE);
     }
     f_runtime = NewString("");
     f_init = NewString("");
@@ -161,7 +161,7 @@ public:
 
     Swig_banner(f_begin);
 
-    Printf(f_runtime, "\n\n#ifndef SWIGTCL\n#define SWIGTCL\n#endif\n\n");
+    Swig_obligatory_macros(f_runtime, "TCL");
 
     /* Set the module name, namespace, and prefix */
 
@@ -182,7 +182,7 @@ public:
 
       if ((f_shadow = NewFile(filen, "w", SWIG_output_files())) == 0) {
 	FileErrorDisplay(filen);
-	SWIG_exit(EXIT_FAILURE);
+	Exit(EXIT_FAILURE);
       }
       f_shadow_stubs = NewString("");
 
@@ -302,7 +302,7 @@ public:
     }
     Setattr(n, "wrap:name", wname);
 
-    Printv(f->def, "SWIGINTERN int\n ", wname, "(ClientData clientData SWIGUNUSED, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {", NIL);
+    Printv(f->def, "SWIGINTERN int\n ", wname, "(ClientData clientData SWIGUNUSED, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {", NIL);
 
     // Emit all of the local variables for holding arguments.
     emit_parameter_variables(parms, f);
@@ -336,8 +336,6 @@ public:
       if ((tm = Getattr(p, "tmap:in"))) {
 	String *parse = Getattr(p, "tmap:in:parse");
 	if (!parse) {
-	  Replaceall(tm, "$target", ln);
-	  Replaceall(tm, "$source", source);
 	  Replaceall(tm, "$input", source);
 	  Setattr(p, "emit:input", source);
 
@@ -401,7 +399,6 @@ public:
     /* Insert constraint checking code */
     for (p = parms; p;) {
       if ((tm = Getattr(p, "tmap:check"))) {
-	Replaceall(tm, "$target", Getattr(p, "lname"));
 	Printv(f->code, tm, "\n", NIL);
 	p = Getattr(p, "tmap:check:next");
       } else {
@@ -414,7 +411,6 @@ public:
       if (!checkAttribute(p, "tmap:in:numinputs", "0")
 	  && !Getattr(p, "tmap:in:parse") && (tm = Getattr(p, "tmap:freearg"))) {
 	if (Len(tm) != 0) {
-	  Replaceall(tm, "$source", Getattr(p, "lname"));
 	  Printv(cleanup, tm, "\n", NIL);
 	}
 	p = Getattr(p, "tmap:freearg:next");
@@ -426,12 +422,9 @@ public:
     /* Insert argument output code */
     for (i = 0, p = parms; p; i++) {
       if ((tm = Getattr(p, "tmap:argout"))) {
-	Replaceall(tm, "$source", Getattr(p, "lname"));
 #ifdef SWIG_USE_RESULTOBJ
-	Replaceall(tm, "$target", "resultobj");
 	Replaceall(tm, "$result", "resultobj");
 #else
-	Replaceall(tm, "$target", "(Tcl_GetObjResult(interp))");
 	Replaceall(tm, "$result", "(Tcl_GetObjResult(interp))");
 #endif
 	Replaceall(tm, "$arg", Getattr(p, "emit:input"));
@@ -450,12 +443,9 @@ public:
 
     /* Return value if necessary  */
     if ((tm = Swig_typemap_lookup_out("out", n, Swig_cresult_name(), f, actioncode))) {
-      Replaceall(tm, "$source", Swig_cresult_name());
 #ifdef SWIG_USE_RESULTOBJ
-      Replaceall(tm, "$target", "resultobj");
       Replaceall(tm, "$result", "resultobj");
 #else
-      Replaceall(tm, "$target", "(Tcl_GetObjResult(interp))");
       Replaceall(tm, "$result", "(Tcl_GetObjResult(interp))");
 #endif
       if (GetFlag(n, "feature:new")) {
@@ -478,13 +468,11 @@ public:
     /* Look for any remaining cleanup */
     if (GetFlag(n, "feature:new")) {
       if ((tm = Swig_typemap_lookup("newfree", n, Swig_cresult_name(), 0))) {
-	Replaceall(tm, "$source", Swig_cresult_name());
 	Printf(f->code, "%s\n", tm);
       }
     }
 
     if ((tm = Swig_typemap_lookup("ret", n, Swig_cresult_name(), 0))) {
-      Replaceall(tm, "$source", Swig_cresult_name());
       Printf(f->code, "%s\n", tm);
     }
 #ifdef SWIG_USE_RESULTOBJ
@@ -516,8 +504,8 @@ public:
 	Wrapper *df = NewWrapper();
 	String *dname = Swig_name_wrapper(iname);
 
-	Printv(df->def, "SWIGINTERN int\n", dname, "(ClientData clientData SWIGUNUSED, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {", NIL);
-	Printf(df->code, "Tcl_Obj *CONST *argv = objv+1;\n");
+	Printv(df->def, "SWIGINTERN int\n", dname, "(ClientData clientData SWIGUNUSED, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {", NIL);
+	Printf(df->code, "Tcl_Obj *const *argv = objv+1;\n");
 	Printf(df->code, "int argc = objc-1;\n");
 	Printv(df->code, dispatch, "\n", NIL);
 	Node *sibl = n;
@@ -580,13 +568,11 @@ public:
     Printv(getf->def, "SWIGINTERN const char *", getfname, "(ClientData clientData SWIGUNUSED, Tcl_Interp *interp, char *name1, char *name2, int flags) {", NIL);
     Wrapper_add_local(getf, "value", "Tcl_Obj *value = 0");
     if ((tm = Swig_typemap_lookup("varout", n, name, 0))) {
-      Replaceall(tm, "$source", name);
-      Replaceall(tm, "$target", "value");
       Replaceall(tm, "$result", "value");
       /* Printf(getf->code, "%s\n",tm); */
       addfail = emit_action_code(n, getf->code, tm);
       Printf(getf->code, "if (value) {\n");
-      Printf(getf->code, "Tcl_SetVar2(interp,name1,name2,Tcl_GetStringFromObj(value,NULL), flags);\n");
+      Printf(getf->code, "Tcl_SetVar2(interp,name1,name2,Tcl_GetString(value), flags);\n");
       Printf(getf->code, "Tcl_DecrRefCount(value);\n");
       Printf(getf->code, "}\n");
       Printf(getf->code, "return NULL;\n");
@@ -604,7 +590,7 @@ public:
     DelWrapper(getf);
 
     /* Try to create a function setting a variable */
-    if (is_assignable(n)) {
+    if (!is_immutable(n)) {
       setf = NewWrapper();
       setname = Swig_name_set(NSPACE_TODO, iname);
       setfname = Swig_name_wrapper(setname);
@@ -616,8 +602,6 @@ public:
         Wrapper_add_local(setf, "name1o", "Tcl_Obj *name1o = 0");
 
         if ((tm = Swig_typemap_lookup("varin", n, name, 0))) {
-	  Replaceall(tm, "$source", "value");
-	  Replaceall(tm, "$target", name);
 	  Replaceall(tm, "$input", "value");
 	  Printf(setf->code, "name1o = Tcl_NewStringObj(name1,-1);\n");
 	  Printf(setf->code, "value = Tcl_ObjGetVar2(interp, name1o, 0, flags);\n");
@@ -690,14 +674,10 @@ public:
     }
 
     if ((tm = Swig_typemap_lookup("consttab", n, name, 0))) {
-      Replaceall(tm, "$source", value);
-      Replaceall(tm, "$target", name);
       Replaceall(tm, "$value", value);
       Replaceall(tm, "$nsname", nsname);
       Printf(const_tab, "%s,\n", tm);
     } else if ((tm = Swig_typemap_lookup("constcode", n, name, 0))) {
-      Replaceall(tm, "$source", value);
-      Replaceall(tm, "$target", name);
       Replaceall(tm, "$value", value);
       Replaceall(tm, "$nsname", nsname);
       Printf(f_init, "%s\n", tm);
@@ -732,7 +712,7 @@ public:
   virtual int classHandler(Node *n) {
     static Hash *emitted = NewHash();
     String *mangled_classname = 0;
-    String *real_classname = 0;
+    SwigType *real_classname = 0;
 
     have_constructor = 0;
     have_destructor = 0;
@@ -760,7 +740,7 @@ public:
       return SWIG_ERROR;
 
     real_classname = Getattr(n, "name");
-    mangled_classname = Swig_name_mangle(real_classname);
+    mangled_classname = Swig_name_mangle_type(real_classname);
 
     if (Getattr(emitted, mangled_classname))
       return SWIG_NOWRAP;
@@ -826,7 +806,7 @@ public:
       int index = 0;
       b = First(baselist);
       while (b.item) {
-	String *bname = Getattr(b.item, "name");
+	SwigType *bname = Getattr(b.item, "name");
 	if ((!bname) || GetFlag(b.item, "feature:ignore") || (!Getattr(b.item, "module"))) {
 	  b = Next(b);
 	  continue;
@@ -836,7 +816,7 @@ public:
 	  Printv(base_classes, bname, " ", NIL);
 	  Printv(base_class_init, "    ", bname, "Ptr::constructor $ptr\n", NIL);
 	}
-	String *bmangle = Swig_name_mangle(bname);
+	String *bmangle = Swig_name_mangle_type(bname);
 	//      Printv(f_wrappers,"extern swig_class _wrap_class_", bmangle, ";\n", NIL);
 	//      Printf(base_class,"&_wrap_class_%s",bmangle);
 	Printf(base_class, "0");
@@ -845,6 +825,7 @@ public:
 
 	//Printf(f_init,"/* Register base : %s */\n", bmangle);
 	//Printf(f_init,"swig_%s_bases[%d] = (swig_class *) SWIG_TypeQuery(\"%s *\")->clientdata;\n",  mangled_classname, index, SwigType_namestr(bname));
+	(void)index;
 	b = Next(b);
 	index++;
 	Putc(',', base_class);
@@ -909,7 +890,7 @@ public:
       //  Add methods
       if (have_methods) {
 	Printv(ptrclass, imethods, NIL);
-      };
+      }
 
       //  Close out the pointer class
       Printv(ptrclass, "}\n\n", NIL);
@@ -967,7 +948,7 @@ public:
     if (!itcl) {
       Printv(cmd_tab, tab4, "{ SWIG_prefix \"", class_name, "\", (swig_wrapper_func) SWIG_ObjectConstructor, (ClientData)&_wrap_class_", mangled_classname,
 	     "},\n", NIL);
-    };
+    }
 
     Delete(t);
     Delete(mangled_classname);
@@ -1043,7 +1024,7 @@ public:
 	Printv(imethods, "{ ", ns_name, "::", class_name, "_", realname, " $swigobj", NIL);
       } else {
 	Printv(imethods, "{ ", class_name, "_", realname, " $swigobj", NIL);
-      };
+      }
 
       pnum = 0;
       for (p = l; p; p = nextSibling(p)) {
