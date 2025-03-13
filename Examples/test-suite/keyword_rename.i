@@ -27,7 +27,7 @@ KW(synchronized, final)
 
 /* C# Keywords */
 KW(string, out)
-struct sealed {int i;};
+struct stackalloc {int i;};
 
 /* Go Keywords */
 KW(go, defer)
@@ -37,6 +37,9 @@ KW(chan, fallthrough)
 KW(end, function)
 KW(nil,local)
 
+/* Javascript keywords */
+KW(instanceof, finally)
+KW(finally, instanceof)
 %}
 
 

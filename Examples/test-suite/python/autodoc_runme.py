@@ -63,16 +63,8 @@ check(inspect.getdoc(A.func3default),
 
 check(inspect.getdoc(A.func0static),
       "func0static(e, arg2, hello, f=2) -> int")
-check(inspect.getdoc(_autodoc.A_func0static),
-      "A_func0static(e, arg2, hello, f=2) -> int")
-check(inspect.getdoc(A_func0static),
-      "A_func0static(e, arg2, hello, f=2) -> int")
 check(inspect.getdoc(A.func1static),
       "func1static(A e, short arg2, Tuple hello, double f=2) -> int")
-check(inspect.getdoc(_autodoc.A_func1static),
-      "A_func1static(A e, short arg2, Tuple hello, double f=2) -> int")
-check(inspect.getdoc(A_func1static),
-      "A_func1static(A e, short arg2, Tuple hello, double f=2) -> int")
 check(inspect.getdoc(A.func2static),
       "func2static(e, arg2, hello, f=2) -> int\n"
       "\n"
@@ -82,44 +74,8 @@ check(inspect.getdoc(A.func2static),
       "arg2: short\n"
       "hello: int tuple[2]\n"
       "f: double")
-check(inspect.getdoc(_autodoc.A_func2static),
-      "A_func2static(e, arg2, hello, f=2) -> int\n"
-      "\n"
-      "Parameters\n"
-      "----------\n"
-      "e: A *\n"
-      "arg2: short\n"
-      "hello: int tuple[2]\n"
-      "f: double")
-check(inspect.getdoc(A_func2static),
-      "A_func2static(e, arg2, hello, f=2) -> int\n"
-      "\n"
-      "Parameters\n"
-      "----------\n"
-      "e: A *\n"
-      "arg2: short\n"
-      "hello: int tuple[2]\n"
-      "f: double")
 check(inspect.getdoc(A.func3static),
       "func3static(A e, short arg2, Tuple hello, double f=2) -> int\n"
-      "\n"
-      "Parameters\n"
-      "----------\n"
-      "e: A *\n"
-      "arg2: short\n"
-      "hello: int tuple[2]\n"
-      "f: double")
-check(inspect.getdoc(_autodoc.A_func3static),
-      "A_func3static(A e, short arg2, Tuple hello, double f=2) -> int\n"
-      "\n"
-      "Parameters\n"
-      "----------\n"
-      "e: A *\n"
-      "arg2: short\n"
-      "hello: int tuple[2]\n"
-      "f: double")
-check(inspect.getdoc(A_func3static),
-      "A_func3static(A e, short arg2, Tuple hello, double f=2) -> int\n"
       "\n"
       "Parameters\n"
       "----------\n"
@@ -141,7 +97,7 @@ check(inspect.getdoc(A.variable_d),
       "variable_d : int"
       )
 
-# Check the low-level functions (not present when using -builtin except for the static ones)
+# Check the low-level functions (not present when using -builtin)
 if not is_python_builtin():
     check(inspect.getdoc(_autodoc.A_funk), "just a string.")
     check(inspect.getdoc(_autodoc.A_func0),
@@ -182,6 +138,28 @@ if not is_python_builtin():
           "----------\n"
           "e: A *\n"
           "arg3: short\n"
+          "hello: int tuple[2]\n"
+          "f: double")
+    check(inspect.getdoc(_autodoc.A_func0static),
+          "A_func0static(e, arg2, hello, f=2) -> int")
+    check(inspect.getdoc(_autodoc.A_func1static),
+          "A_func1static(A e, short arg2, Tuple hello, double f=2) -> int")
+    check(inspect.getdoc(_autodoc.A_func2static),
+          "A_func2static(e, arg2, hello, f=2) -> int\n"
+          "\n"
+          "Parameters\n"
+          "----------\n"
+          "e: A *\n"
+          "arg2: short\n"
+          "hello: int tuple[2]\n"
+          "f: double")
+    check(inspect.getdoc(_autodoc.A_func3static),
+          "A_func3static(A e, short arg2, Tuple hello, double f=2) -> int\n"
+          "\n"
+          "Parameters\n"
+          "----------\n"
+          "e: A *\n"
+          "arg2: short\n"
           "hello: int tuple[2]\n"
           "f: double")
     check(inspect.getdoc(_autodoc.A_variable_a_set), "A_variable_a_set(self, variable_a)")
@@ -279,3 +257,5 @@ check(inspect.getdoc(process3), "process3(int _from, int _in, int var) -> int")
 check(inspect.getdoc(process4), "process4(int _from=0, int _in=1, int var=2) -> int")
 
 check(inspect.getdoc(process_complex_defval), "process_complex_defval(val=PROCESS_DEFAULT_VALUE, factor=some_type(-1)) -> int")
+
+check(inspect.getdoc(a_structure.__init__), "__init__(a_structure self) -> a_structure", None, skip)

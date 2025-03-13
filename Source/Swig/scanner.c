@@ -4,7 +4,7 @@
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
  * included with the SWIG source code as distributed by the SWIG developers
- * and at http://www.swig.org/legal.html.
+ * and at https://www.swig.org/legal.html.
  *
  * scanner.c
  *
@@ -56,7 +56,7 @@ static void brackets_clear(Scanner *);
 
 Scanner *NewScanner(void) {
   Scanner *s;
-  s = (Scanner *) malloc(sizeof(Scanner));
+  s = (Scanner *) Malloc(sizeof(Scanner));
   s->line = 1;
   s->file = 0;
   s->nexttoken = -1;
@@ -88,8 +88,8 @@ void DelScanner(Scanner *s) {
   Delete(s->file);
   Delete(s->error);
   Delete(s->str);
-  free(s->idstart);
-  free(s); 
+  Free(s->idstart);
+  Free(s);
 }
 
 /* -----------------------------------------------------------------------------
@@ -202,7 +202,7 @@ int Scanner_start_line(Scanner *s) {
  * ----------------------------------------------------------------------------- */
 
 void Scanner_idstart(Scanner *s, const char *id) {
-  free(s->idstart);
+  Free(s->idstart);
   s->idstart = Swig_copy_string(id);
 }
 
@@ -336,9 +336,9 @@ static void brackets_reset(Scanner *s) {
  * Usually called when '(' is found.
  * ----------------------------------------------------------------------------- */
 static void brackets_push(Scanner *s) {
-  int *newInt = (int *)malloc(sizeof(int));
+  int *newInt = (int *)Malloc(sizeof(int));
   *newInt = 0;
-  Push(s->brackets, NewVoid(newInt, free));
+  Push(s->brackets, NewVoid(newInt, Free));
 }
 
 /* -----------------------------------------------------------------------------
@@ -468,12 +468,9 @@ static void get_escape(Scanner *s) {
 	state = 20;
 	Delitem(s->text, DOH_END);
       } else {
-	char tmp[3];
-	tmp[0] = '\\';
-	tmp[1] = (char)c;
-	tmp[2] = 0;
 	Delitem(s->text, DOH_END);
-	Append(s->text, tmp);
+	Putc('\\',s->text);
+	Putc((char)c,s->text);
 	return;
       }
       break;
@@ -596,10 +593,6 @@ static int look(Scanner *s) {
 	state = 3;
       else if (c == '\\')
 	return SWIG_TOKEN_BACKSLASH;
-      else if (c == '[')
-	return SWIG_TOKEN_LBRACKET;
-      else if (c == ']')
-	return SWIG_TOKEN_RBRACKET;
       else if (c == '@')
 	return SWIG_TOKEN_AT;
       else if (c == '$')
@@ -636,7 +629,11 @@ static int look(Scanner *s) {
       }
 
       else if (c == '.')
-	state = 100;		/* Maybe a number, maybe just a period */
+	state = 100;		/* Maybe a number, maybe ellipsis, just a period */
+      else if (c == '[')
+        state = 102;            /* Maybe a bracket or a double bracket */
+      else if (c == ']')
+        state = 103;            /* Maybe a bracket or a double bracket */
       else if (isdigit(c))
 	state = 8;		/* A numerical value */
       else
@@ -716,9 +713,7 @@ static int look(Scanner *s) {
 	state = 20;
       }
       else {
-	char temp[2] = { 0, 0 };
-	temp[0] = c;
-	Append( str_delimiter, temp );
+	Putc( (char)c, str_delimiter );
       }
     
       break;
@@ -742,9 +737,7 @@ static int look(Scanner *s) {
 	  int i=0;
 	  String *end_delimiter = NewStringEmpty();
 	  while ((c = nextchar(s)) != 0 && c!='\"') {
-	    char temp[2] = { 0, 0 };
-	    temp[0] = c;
-	    Append( end_delimiter, temp );
+	    Putc( (char)c, end_delimiter );
 	    i++;
 	  }
 	  
@@ -833,7 +826,7 @@ static int look(Scanner *s) {
 	return SWIG_TOKEN_MODEQUAL;
       } else if (c == '}') {
 	Swig_error(cparse_file, cparse_line, "Syntax error. Extraneous '%%}'\n");
-	SWIG_exit(EXIT_FAILURE);
+	Exit(EXIT_FAILURE);
       } else {
 	retract(s, 1);
 	return SWIG_TOKEN_PERCENT;
@@ -893,9 +886,16 @@ static int look(Scanner *s) {
       }
       if (c == '<')
 	state = 240;
-      else if (c == '=')
-	return SWIG_TOKEN_LTEQUAL;
-      else {
+      else if (c == '=') {
+	if ((c = nextchar(s)) == 0) {
+	  return SWIG_TOKEN_LTEQUAL;
+	} else if (c == '>' && cparse_cplusplus) { /* Spaceship operator */
+	  return SWIG_TOKEN_LTEQUALGT;
+	} else {
+	  retract(s, 1);
+	  return SWIG_TOKEN_LTEQUAL;
+	}
+      } else {
 	retract(s, 1);
 	brackets_increment(s);
 	return SWIG_TOKEN_LESSTHAN;
@@ -1031,9 +1031,8 @@ static int look(Scanner *s) {
 	  return SWIG_TOKEN_BOOL;
 	else if (Strcmp(s->text, "false") == 0)
 	  return SWIG_TOKEN_BOOL;
-	}
+      }
       return SWIG_TOKEN_ID;
-      break;
 
     case 77: /*identifier or wide string literal*/
       if ((c = nextchar(s)) == 0)
@@ -1121,7 +1120,7 @@ static int look(Scanner *s) {
 	return SWIG_TOKEN_FLOAT;
       } else if ((c == 'l') || (c == 'L')) {
 	Delitem(s->text, DOH_END);
-	return SWIG_TOKEN_DOUBLE;
+	return SWIG_TOKEN_LONGDOUBLE;
       } else {
 	retract(s, 1);
 	return (SWIG_TOKEN_DOUBLE);
@@ -1258,7 +1257,7 @@ static int look(Scanner *s) {
 	return SWIG_TOKEN_FLOAT;
       } else if ((c == 'l') || (c == 'L')) {
 	Delitem(s->text, DOH_END);
-	return SWIG_TOKEN_DOUBLE;
+	return SWIG_TOKEN_LONGDOUBLE;
       } else {
 	retract(s, 1);
 	return SWIG_TOKEN_DOUBLE;
@@ -1330,16 +1329,56 @@ static int look(Scanner *s) {
       }
       break;
 
-      /* A period or maybe a floating point number */
+      /* A period or an ellipsis or maybe a floating point number */
 
     case 100:
       if ((c = nextchar(s)) == 0)
 	return (0);
       if (isdigit(c))
 	state = 81;
+      else if (c == '.')
+	state = 101;
       else {
 	retract(s, 1);
 	return SWIG_TOKEN_PERIOD;
+      }
+      break;
+
+      /* An ellipsis */
+
+    case 101:
+      if ((c = nextchar(s)) == 0)
+	return (0);
+      if (c == '.') {
+	return SWIG_TOKEN_ELLIPSIS;
+      } else {
+	retract(s, 2);
+	return SWIG_TOKEN_PERIOD;
+      }
+      break;
+
+    /* A left bracket or a double left bracket */
+    case 102:
+
+      if ((c = nextchar(s)) == 0) {
+        return SWIG_TOKEN_LBRACKET;
+      } else if (c == '[') {
+        return SWIG_TOKEN_LLBRACKET;
+      } else {
+        retract(s, 1);
+        return SWIG_TOKEN_LBRACKET;
+      }
+      break;
+
+    /* a right bracket or a double right bracket */
+    case 103:
+      if ((c = nextchar(s)) == 0) {
+        return SWIG_TOKEN_RBRACKET;
+      } else if (c == ']') {
+        return SWIG_TOKEN_RRBRACKET;
+      } else {
+        retract(s, 1);
+        return SWIG_TOKEN_RBRACKET;
       }
       break;
 
@@ -1427,9 +1466,6 @@ static int look(Scanner *s) {
       }
       break;
 
-
-      /* An illegal character */
-
       /* Reverse string */
     case 900:
       if ((c = nextchar(s)) == 0) {
@@ -1442,6 +1478,7 @@ static int look(Scanner *s) {
       }
       break;
 
+      /* An illegal character */
     default:
       return SWIG_TOKEN_ILLEGAL;
     }
@@ -1511,131 +1548,61 @@ void Scanner_skip_line(Scanner *s) {
  *
  * Skips a piece of code enclosed in begin/end symbols such as '{...}' or
  * (...).  Ignores symbols inside comments or strings.
+ *
+ * Returns 0 on success, -1 if no matching endchar could be found.
  * ----------------------------------------------------------------------------- */
 
 int Scanner_skip_balanced(Scanner *s, int startchar, int endchar) {
-  char c;
-  int num_levels = 1;
-  int state = 0;
-  char temp[2] = { 0, 0 };
-  String *locator = 0;
-  temp[0] = (char) startchar;
-  Clear(s->text);
-  Setfile(s->text, Getfile(s->str));
-  Setline(s->text, s->line);
+  int old_line = s->line;
+  long position = Tell(s->str);
 
-  Append(s->text, temp);
-  while (num_levels > 0) {
-    if ((c = nextchar(s)) == 0) {
-      Delete(locator);
-      return -1;
-    }
-    switch (state) {
-    case 0:
-      if (c == startchar)
-	num_levels++;
-      else if (c == endchar)
-	num_levels--;
-      else if (c == '/')
-	state = 10;
-      else if (c == '\"')
-	state = 20;
-      else if (c == '\'')
-	state = 30;
+  int num_levels = 1;
+  int starttok = 0;
+  int endtok = 0;
+  switch (endchar) {
+    case '}':
+      starttok = SWIG_TOKEN_LBRACE;
+      endtok = SWIG_TOKEN_RBRACE;
       break;
-    case 10:
-      if (c == '/')
-	state = 11;
-      else if (c == '*')
-	state = 12;
-      else if (c == startchar) {
-	state = 0;
-	num_levels++;
-      }
-      else
-	state = 0;
+    case ')':
+      starttok = SWIG_TOKEN_LPAREN;
+      endtok = SWIG_TOKEN_RPAREN;
       break;
-    case 11:
-      if (c == '\n')
-	state = 0;
-      else
-	state = 11;
+    case ']':
+      starttok = SWIG_TOKEN_LBRACKET;
+      endtok = SWIG_TOKEN_RBRACKET;
       break;
-    case 12: /* first character inside C comment */
-      if (c == '*')
-	state = 14;
-      else if (c == '@')
-	state = 40;
-      else
-	state = 13;
-      break;
-    case 13:
-      if (c == '*')
-	state = 14;
-      break;
-    case 14: /* possible end of C comment */
-      if (c == '*')
-	state = 14;
-      else if (c == '/')
-	state = 0;
-      else
-	state = 13;
-      break;
-    case 20:
-      if (c == '\"')
-	state = 0;
-      else if (c == '\\')
-	state = 21;
-      break;
-    case 21:
-      state = 20;
-      break;
-    case 30:
-      if (c == '\'')
-	state = 0;
-      else if (c == '\\')
-	state = 31;
-      break;
-    case 31:
-      state = 30;
-      break;
-    /* 40-45 SWIG locator checks - a C comment with contents starting: @SWIG */
-    case 40:
-      state = (c == 'S') ? 41 : (c == '*') ? 14 : 13;
-      break;
-    case 41:
-      state = (c == 'W') ? 42 : (c == '*') ? 14 : 13;
-      break;
-    case 42:
-      state = (c == 'I') ? 43 : (c == '*') ? 14 : 13;
-      break;
-    case 43:
-      state = (c == 'G') ? 44 : (c == '*') ? 14 : 13;
-      if (c == 'G') {
-	Delete(locator);
-	locator = NewString("/*@SWIG");
-      }
-      break;
-    case 44:
-      if (c == '*')
-	state = 45;
-      Putc(c, locator);
-      break;
-    case 45: /* end of SWIG locator in C comment */
-      if (c == '/') {
-	state = 0;
-	Putc(c, locator);
-	Scanner_locator(s, locator);
-      } else {
-	/* malformed locator */
-	state = (c == '*') ? 14 : 13;
-      }
+    case '>':
+      starttok = SWIG_TOKEN_LESSTHAN;
+      endtok = SWIG_TOKEN_GREATERTHAN;
       break;
     default:
-      break;
+      assert(0);
+  }
+
+  while (1) {
+    int tok = Scanner_token(s);
+    if (tok == starttok) {
+      num_levels++;
+    } else if (tok == endtok) {
+      if (--num_levels == 0) break;
+    } else if (tok == SWIG_TOKEN_COMMENT) {
+      char *loc = Char(s->text);
+      if (strncmp(loc, "/*@SWIG", 7) == 0 && loc[Len(s->text)-3] == '@') {
+	Scanner_locator(s, s->text);
+      }
+    } else if (tok == 0) {
+      return -1;
     }
   }
-  Delete(locator);
+
+  Delete(s->text);
+  s->text = NewStringWithSize(Char(s->str) + position - 1,
+			      Tell(s->str) - position + 1);
+  Char(s->text)[0] = startchar;
+  Setfile(s->text, Getfile(s->str));
+  Setline(s->text, old_line);
+
   return 0;
 }
 
@@ -1646,107 +1613,67 @@ int Scanner_skip_balanced(Scanner *s, int startchar, int endchar) {
  * ----------------------------------------------------------------------------- */
 
 String *Scanner_get_raw_text_balanced(Scanner *s, int startchar, int endchar) {
-  String *result = 0;
-  char c;
+  String *result = NULL;
   int old_line = s->line;
   String *old_text = Copy(s->text);
   long position = Tell(s->str);
 
   int num_levels = 1;
-  int state = 0;
-  char temp[2] = { 0, 0 };
-  temp[0] = (char) startchar;
-  Clear(s->text);
-  Setfile(s->text, Getfile(s->str));
-  Setline(s->text, s->line);
-  Append(s->text, temp);
-  while (num_levels > 0) {
-    if ((c = nextchar(s)) == 0) {
-      Clear(s->text);
-      Append(s->text, old_text);
-      Delete(old_text);
-      s->line = old_line;
-      return 0;
-    }
-    switch (state) {
-    case 0:
-      if (c == startchar)
-	num_levels++;
-      else if (c == endchar)
-	num_levels--;
-      else if (c == '/')
-	state = 10;
-      else if (c == '\"')
-	state = 20;
-      else if (c == '\'')
-	state = 30;
+  int starttok = 0;
+  int endtok = 0;
+  switch (endchar) {
+    case '}':
+      starttok = SWIG_TOKEN_LBRACE;
+      endtok = SWIG_TOKEN_RBRACE;
       break;
-    case 10:
-      if (c == '/')
-	state = 11;
-      else if (c == '*')
-	state = 12;
-      else if (c == startchar) {
-	state = 0;
-	num_levels++;
-      }
-      else
-	state = 0;
+    case ')':
+      starttok = SWIG_TOKEN_LPAREN;
+      endtok = SWIG_TOKEN_RPAREN;
       break;
-    case 11:
-      if (c == '\n')
-	state = 0;
-      else
-	state = 11;
+    case ']':
+      starttok = SWIG_TOKEN_LBRACKET;
+      endtok = SWIG_TOKEN_RBRACKET;
       break;
-    case 12: /* first character inside C comment */
-      if (c == '*')
-	state = 14;
-      else
-	state = 13;
-      break;
-    case 13:
-      if (c == '*')
-	state = 14;
-      break;
-    case 14: /* possible end of C comment */
-      if (c == '*')
-	state = 14;
-      else if (c == '/')
-	state = 0;
-      else
-	state = 13;
-      break;
-    case 20:
-      if (c == '\"')
-	state = 0;
-      else if (c == '\\')
-	state = 21;
-      break;
-    case 21:
-      state = 20;
-      break;
-    case 30:
-      if (c == '\'')
-	state = 0;
-      else if (c == '\\')
-	state = 31;
-      break;
-    case 31:
-      state = 30;
+    case '>':
+      starttok = SWIG_TOKEN_LESSTHAN;
+      endtok = SWIG_TOKEN_GREATERTHAN;
       break;
     default:
+      assert(0);
+  }
+
+  while (1) {
+    int tok = Scanner_token(s);
+    if (tok == starttok) {
+      num_levels++;
+    } else if (tok == endtok) {
+      if (--num_levels == 0) {
+	result = NewStringWithSize(Char(s->str) + position - 1,
+				   Tell(s->str) - position + 1);
+	Char(result)[0] = startchar;
+	Setfile(result, Getfile(s->str));
+	Setline(result, old_line);
+	break;
+      }
+    } else if (tok == SWIG_TOKEN_COMMENT) {
+      char *loc = Char(s->text);
+      if (strncmp(loc, "/*@SWIG", 7) == 0 && loc[Len(s->text)-3] == '@') {
+	Scanner_locator(s, s->text);
+      }
+    } else if (tok == 0) {
       break;
     }
   }
+
+  /* Reset the scanner state. */
   Seek(s->str, position, SEEK_SET);
-  result = Copy(s->text);
-  Clear(s->text);
-  Append(s->text, old_text);
-  Delete(old_text);
+  Delete(s->text);
+  s->text = old_text;
   s->line = old_line;
+
   return result;
 }
+
 /* -----------------------------------------------------------------------------
  * Scanner_isoperator()
  *
@@ -1796,14 +1723,14 @@ void Scanner_locator(Scanner *s, String *loc) {
 	cparse_file = locs->filename;
 	cparse_line = locs->line_number;
 	l = locs->next;
-	free(locs);
+	Free(locs);
 	locs = l;
       }
       return;
     }
 
     /* We're going to push a new location */
-    l = (Locator *) malloc(sizeof(Locator));
+    l = (Locator *) Malloc(sizeof(Locator));
     l->filename = cparse_file;
     l->line_number = cparse_line;
     l->next = locs;

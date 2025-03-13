@@ -4,15 +4,15 @@
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
  * included with the SWIG source code as distributed by the SWIG developers
- * and at http://www.swig.org/legal.html.
+ * and at https://www.swig.org/legal.html.
  *
  * swigmod.h
  *
  * Main header file for SWIG modules.
  * ----------------------------------------------------------------------------- */
 
-#ifndef SWIG_SWIGMOD_H_
-#define SWIG_SWIGMOD_H_
+#ifndef SWIG_SWIGMOD_H
+#define SWIG_SWIGMOD_H
 
 #include "swig.h"
 #include "preprocessor.h"
@@ -33,7 +33,6 @@ extern int ImportMode;
 extern int NoExcept;		// -no_except option
 extern int Abstract;		// abstract base class
 extern int SmartPointer;	// smart pointer methods being emitted
-extern int SwigRuntime;
 
 /* Overload "argc" and "argv" */
 extern String *argv_template_string;
@@ -99,6 +98,8 @@ public:
 
 protected:
   AccessMode cplus_mode;
+  AccessMode accessModeFromString(String *access);
+  int abstractClassTest(Node *n);	/* Is class really abstract? */
 };
 
 /* ----------------------------------------------------------------------------
@@ -196,7 +197,7 @@ public:
   virtual int classDirector(Node *n);
   virtual int classDirectorInit(Node *n);
   virtual int classDirectorEnd(Node *n);
-  virtual int unrollVirtualMethods(Node *n, Node *parent, List *vm, int default_director, int &virtual_destructor, int protectedbase = 0);
+  virtual int unrollVirtualMethods(Node *n, Node *parent, List *vm, int &virtual_destructor, int protectedbase = 0);
   virtual int classDirectorConstructor(Node *n);
   virtual int classDirectorDefaultConstructor(Node *n);
   virtual int classDirectorMethod(Node *n, Node *parent, String *super);
@@ -211,13 +212,12 @@ public:
   virtual int addInterfaceSymbol(const String *interface_name, Node *n, const_String_or_char_ptr scope = "");
   virtual void dumpSymbols();
   virtual Node *symbolLookup(const String *s, const_String_or_char_ptr scope = ""); /* Symbol lookup */
-  virtual Hash* symbolAddScope(const_String_or_char_ptr scope);
+  virtual Hash* symbolAddScope(const_String_or_char_ptr scope/*, Node *n = 0*/);
   virtual Hash* symbolScopeLookup(const_String_or_char_ptr scope);
   virtual Hash* symbolScopePseudoSymbolLookup(const_String_or_char_ptr scope);
   static Node *classLookup(const SwigType *s); /* Class lookup      */
   static Node *enumLookup(SwigType *s);	/* Enum lookup       */
-  virtual int abstractClassTest(Node *n);	/* Is class really abstract? */
-  virtual int is_assignable(Node *n);	/* Is variable assignable? */
+  virtual int is_immutable(Node *n);	/* Is variable assignable? */
   virtual String *runtimeCode();	/* returns the language specific runtime code */
   virtual String *defaultExternalRuntimeFilename();	/* the default filename for the external runtime */
   virtual void replaceSpecialVariables(String *method, String *tm, Parm *parm); /* Language specific special variable substitutions for $typemap() */
@@ -228,11 +228,11 @@ public:
   /* Returns the cplus_runtime mode */
   int cplus_runtime_mode();
 
+  /* Flag for language to support directors */
+  void directorLanguage(int val = 1);
+
   /* Allow director related code generation */
   void allow_directors(int val = 1);
-
-  /* Return true if directors are enabled */
-  int directorsEnabled() const;
 
   /* Allow director protected members related code generation */
   void allow_dirprot(int val = 1);
@@ -243,10 +243,10 @@ public:
   /* Returns the dirprot mode */
   int dirprot_mode() const;
 
-  /* Check if the non public constructor is  needed (for directors) */
+  /* Check if the non public constructor is needed (for directors) */
   int need_nonpublic_ctor(Node *n);
 
-  /* Check if the non public member is  needed (for directors) */
+  /* Check if the non public member is needed (for directors) */
   int need_nonpublic_member(Node *n);
 
   /* Set none comparison string */
@@ -333,24 +333,23 @@ protected:
   /* Director constructor "template" code */
   String *director_ctor_code;
 
-  /* Director 'protected' constructor "template" code */
+  /* Director 'protected' constructor "template" code, disabled by
+     default. Each language that needs it, has to define it. */
   String *director_prot_ctor_code;
 
   /* Director allows multiple inheritance */
   int director_multiple_inheritance;
 
-  /* Director language module */
-  int director_language;
-
   /* Used to translate Doxygen comments to target documentation format */
   class DoxygenTranslator *doxygenTranslator;
 
 private:
+  void unrollOneVirtualMethod(String *classname, Node *n, Node *parent, List *vm, int &virtual_destructor, int protectedbase);
+
   Hash *symtabs; /* symbol tables */
   int overloading;
   int multiinput;
   int cplus_runtime;
-  int directors;
   static Language *this_;
 };
 
@@ -394,6 +393,7 @@ String *Swig_overload_dispatch_cast(Node *n, const_String_or_char_ptr fmt, int *
 List *Swig_overload_rank(Node *n, bool script_lang_wrapping);
 SwigType *cplus_value_type(SwigType *t);
 
+int Swig_directors_enabled();
 /* directors.cxx start */
 String *Swig_csuperclass_call(String *base, String *method, ParmList *l);
 String *Swig_class_declaration(Node *n, String *name);
@@ -403,6 +403,7 @@ String *Swig_method_decl(SwigType *return_base_type, SwigType *decl, const_Strin
 String *Swig_director_declaration(Node *n);
 void Swig_director_emit_dynamic_cast(Node *n, Wrapper *f);
 void Swig_director_parms_fixup(ParmList *parms);
+bool Swig_director_can_unwrap(Node *n);
 /* directors.cxx end */
 
 /* Utilities */
@@ -428,15 +429,13 @@ extern "C" {
   void Swig_print_with_location(DOH *object, int count = -1);
 }
 
+void Swig_default_allocators(Node *n);
+void Swig_process_types(Node *n);
+
 /* Contracts */
 void Swig_contracts(Node *n);
 void Swig_contract_mode_set(int flag);
 int Swig_contract_mode_get();
-
-/* Browser */
-void Swig_browser(Node *n, int);
-void Swig_default_allocators(Node *n);
-void Swig_process_types(Node *n);
 
 /* Nested classes */
 void Swig_nested_process_classes(Node *n);

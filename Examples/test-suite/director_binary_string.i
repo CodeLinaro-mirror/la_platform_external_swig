@@ -4,10 +4,15 @@
 
 %apply (char *STRING, size_t LENGTH) { (char *dataBufferAA, int sizeAA) };
 %apply (char *STRING, size_t LENGTH) { (char *dataBufferBB, int sizeBB) };
+#ifdef SWIGD
+%apply (const char* STRING, size_t LENGTH) { (const char* data, size_t datalen) };
+#else
 %apply (char* STRING, size_t LENGTH) { (const void* data, size_t datalen) };
+#endif
 
 %inline %{
 #include <stdlib.h>
+#include <string.h>
 
 #define BUFFER_SIZE_AA 8
 #define BUFFER_SIZE_BB 5
@@ -21,7 +26,11 @@ public:
     if (dataBufferBB)
       memset(dataBufferBB, -1, sizeBB);
   }
+  #ifdef SWIGD
+  virtual void writeData(const char* data, size_t datalen) = 0;
+  #else
   virtual void writeData(const void* data, size_t datalen) = 0;
+  #endif
 };
 
 class Caller {

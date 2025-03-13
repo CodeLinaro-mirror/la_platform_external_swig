@@ -29,6 +29,7 @@ enum SomeEnum
  */
 struct SomeStruct
 {
+   int width; ///< \**immutable** image width in pixels
 };
 
 /**
@@ -130,6 +131,25 @@ struct SomeAnotherStruct
 	void structMethodExtended2(int a, int b)
 	{
 	}
+};
+
+struct Foo1636
+{
+  ///@{
+  /// groupmember1 description
+  int groupmember1;
+  /// groupmember2 description
+  int groupmember2;
+  ///@}
+};
+
+struct Foo1750
+{
+  /// @name Group name
+  /// @{
+  int a;
+  /// @}
+  int b;
 };
 
 #ifdef SWIGPYTHON_BUILTIN

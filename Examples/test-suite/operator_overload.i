@@ -69,6 +69,7 @@ see bottom for a set of possible tests
 #endif
 
 #ifdef SWIGPHP
+// "And" and "Or" can't be used as function names in PHP.
 %rename(AndOperator) operator &&;
 %rename(OrOperator) operator ||;
 #endif
@@ -78,8 +79,8 @@ see bottom for a set of possible tests
 #endif
 
 #ifdef SWIGD
-// Due to the way operator overloading is implemented in D1 and D2, the prefix
-// increment/decrement operators (D1) resp. the postfix ones (D2) are ignored. 
+// Due to the way operator overloading is implemented in D2, the postfix
+// increment/decrement operators are ignored.
 %warnfilter(SWIGWARN_IGNORE_OPERATOR_PLUSPLUS, SWIGWARN_IGNORE_OPERATOR_MINUSMINUS);
 #endif
 
@@ -174,25 +175,24 @@ inline bool operator>=(const Op& a,const Op& b){return a.i>=b.i;}
   Op operator-(const Op& a,const Op& b){return Op(a.i-b.i);}
 %}
 
-// in order to wrapper this correctly
-// we need to extend the class
+// in order to wrap this correctly we need to extend the class
 // to make the friends & non members part of the class
-%extend Op{
-        Op operator &&(const Op& b){return Op($self->i&&b.i);}
-        Op operator or(const Op& b){return Op($self->i||b.i);}
+%extend Op {
+        Op operator &&(const Op& b){return *$self && b;}
+        Op operator or(const Op& b){return  *self || b;}
 
-	Op operator+(const Op& b){return Op($self->i+b.i);}
-	Op operator-(const Op& b){return Op($self->i-b.i);}
-	Op operator*(const Op& b){return Op($self->i*b.i);}
-	Op operator/(const Op& b){return Op($self->i/b.i);}
-	Op operator%(const Op& b){return Op($self->i%b.i);}
+	Op operator+(const Op& b){return *$self + b;}
+	Op operator-(const Op& b){return *$self - b;}
+	Op operator*(const Op& b){return *$self * b;}
+	Op operator/(const Op& b){return *$self / b;}
+	Op operator%(const Op& b){return *$self % b;}
 
-	bool operator==(const Op& b){return $self->i==b.i;}
-	bool operator!=(const Op& b){return $self->i!=b.i;}
-	bool operator< (const Op& b){return $self->i<b.i;}
-	bool operator<=(const Op& b){return $self->i<=b.i;}
-	bool operator> (const Op& b){return $self->i>b.i;}
-	bool operator>=(const Op& b){return $self->i>=b.i;}
+	bool operator==(const Op& b){return *$self == b;}
+	bool operator!=(const Op& b){return *$self != b;}
+	bool operator< (const Op& b){return *$self <  b;}
+	bool operator<=(const Op& b){return *$self <= b;}
+	bool operator> (const Op& b){return *$self >  b;}
+	bool operator>=(const Op& b){return *$self >= b;}
 
 	// subtraction with reversed arguments
 	Op __rsub__(const int b){return Op(b - $self->i);}

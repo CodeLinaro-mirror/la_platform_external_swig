@@ -4,7 +4,7 @@
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
  * included with the SWIG source code as distributed by the SWIG developers
- * and at http://www.swig.org/legal.html.
+ * and at https://www.swig.org/legal.html.
  *
  * perl5.cxx
  *
@@ -21,7 +21,7 @@ Perl 5 Options (available with -perl5)\n\
      -const          - Wrap constants as constants and not variables (implies -proxy)\n\
      -nopm           - Do not generate the .pm file\n\
      -noproxy        - Don't create proxy classes\n\
-     -proxy          - Create proxy classes\n\
+     -proxy          - Create proxy classes (enabled by default)\n\
      -static         - Omit code related to dynamic loading\n\
 \n";
 
@@ -118,12 +118,12 @@ static int have_operators = 0;
 class PERL5:public Language {
 public:
 
-  PERL5():Language () {
+  PERL5() {
     Clear(argc_template_string);
     Printv(argc_template_string, "items", NIL);
     Clear(argv_template_string);
     Printv(argv_template_string, "ST(%d)", NIL);
-    director_language = 1;
+    directorLanguage();
   }
 
   /* Test to see if a type corresponds to something wrapped with a shadow class */
@@ -154,11 +154,11 @@ public:
 	if (strcmp(argv[i], "-package") == 0) {
 	  Printv(stderr,
 		 "*** -package is no longer supported\n*** use the directive '%module A::B::C' in your interface file instead\n*** see the Perl section in the manual for details.\n", NIL);
-	  SWIG_exit(EXIT_FAILURE);
+	  Exit(EXIT_FAILURE);
 	} else if (strcmp(argv[i], "-interface") == 0) {
 	  Printv(stderr,
 		 "*** -interface is no longer supported\n*** use the directive '%module A::B::C' in your interface file instead\n*** see the Perl section in the manual for details.\n", NIL);
-	  SWIG_exit(EXIT_FAILURE);
+	  Exit(EXIT_FAILURE);
 	} else if (strcmp(argv[i], "-exportall") == 0) {
 	  export_all = 1;
 	  Swig_mark_arg(i);
@@ -197,7 +197,7 @@ public:
 	} else if (strcmp(argv[i], "-nocppcast") == 0) {
 	  Printf(stderr, "Deprecated command line option: %s. This option is no longer supported.\n", argv[i]);
 	  Swig_mark_arg(i);
-	  SWIG_exit(EXIT_FAILURE);
+	  Exit(EXIT_FAILURE);
 	}
       }
     }
@@ -276,7 +276,7 @@ public:
     f_begin = NewFile(outfile, "w", SWIG_output_files());
     if (!f_begin) {
       FileErrorDisplay(outfile);
-      SWIG_exit(EXIT_FAILURE);
+      Exit(EXIT_FAILURE);
     }
     f_runtime = NewString("");
     f_init = NewString("");
@@ -285,11 +285,11 @@ public:
     f_directors_h = NewString("");
     f_directors = NewString("");
 
-    if (directorsEnabled()) {
+    if (Swig_directors_enabled()) {
       f_runtime_h = NewFile(outfile_h, "w", SWIG_output_files());
       if (!f_runtime_h) {
 	FileErrorDisplay(outfile_h);
-	SWIG_exit(EXIT_FAILURE);
+	Exit(EXIT_FAILURE);
       }
     }
 
@@ -319,9 +319,9 @@ public:
 
     Swig_banner(f_begin);
 
-    Printf(f_runtime, "\n\n#ifndef SWIGPERL\n#define SWIGPERL\n#endif\n\n");
+    Swig_obligatory_macros(f_runtime, "PERL");
 
-    if (directorsEnabled()) {
+    if (Swig_directors_enabled()) {
       Printf(f_runtime, "#define SWIG_DIRECTORS\n");
     }
     Printf(f_runtime, "#define SWIG_CASTRANK_MODE\n");
@@ -341,7 +341,7 @@ public:
       fprintf(stdout, "top: using namespace_module: %s\n", Char(namespace_module));
     }
 
-    if (directorsEnabled()) {
+    if (Swig_directors_enabled()) {
       Swig_banner(f_directors_h);
       Printf(f_directors_h, "\n");
       Printf(f_directors_h, "#ifndef SWIG_%s_WRAP_H_\n", underscore_module);
@@ -407,7 +407,7 @@ public:
       String *filen = NewStringf("%s%s", SWIG_output_directory(), pmfile);
       if ((f_pm = NewFile(filen, "w", SWIG_output_files())) == 0) {
 	FileErrorDisplay(filen);
-	SWIG_exit(EXIT_FAILURE);
+	Exit(EXIT_FAILURE);
       }
       Delete(filen);
       filen = NULL;
@@ -445,13 +445,7 @@ public:
 
     Printv(magic,
            "#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n",
-	   "#ifdef PERL_OBJECT\n",
-	   "#define MAGIC_CLASS _wrap_", underscore_module, "_var::\n",
-	   "class _wrap_", underscore_module, "_var : public CPerlObj {\n",
-	   "public:\n",
-	   "#else\n",
 	   "#define MAGIC_CLASS\n",
-	   "#endif\n",
 	   "SWIGCLASS_STATIC int swig_magic_readonly(pTHX_ SV *SWIGUNUSEDPARM(sv), MAGIC *SWIGUNUSEDPARM(mg)) {\n",
 	   tab4, "MAGIC_PPERL\n", tab4, "croak(\"Value is read-only.\");\n", tab4, "return 0;\n", "}\n", NIL);
 
@@ -460,7 +454,7 @@ public:
     /* emit wrappers */
     Language::top(n);
 
-    if (directorsEnabled()) {
+    if (Swig_directors_enabled()) {
       // Insert director runtime into the f_runtime file (make it occur before %header section)
       Swig_insert_file("director_common.swg", f_runtime);
       Swig_insert_file("director.swg", f_runtime);
@@ -470,7 +464,6 @@ public:
 
     /* Dump out variable wrappers */
 
-    Printv(magic, "\n\n#ifdef PERL_OBJECT\n", "};\n", "#endif\n", NIL);
     Printv(magic, "\n#ifdef __cplusplus\n}\n#endif\n", NIL);
 
     Printf(f_header, "%s\n", magic);
@@ -619,7 +612,7 @@ public:
     Dump(f_runtime, f_begin);
     Dump(f_header, f_begin);
 
-    if (directorsEnabled()) {
+    if (Swig_directors_enabled()) {
       Dump(f_directors_h, f_runtime_h);
       Printf(f_runtime_h, "\n");
       Printf(f_runtime_h, "#endif\n");
@@ -725,14 +718,11 @@ public:
 
       /* Produce string representation of source and target arguments */
       sprintf(source, "ST(%d)", i);
-      String *target = Getattr(p, "lname");
 
       if (i >= num_required) {
 	Printf(f->code, "    if (items > %d) {\n", i);
       }
       if ((tm = Getattr(p, "tmap:in"))) {
-	Replaceall(tm, "$target", target);
-	Replaceall(tm, "$source", source);
 	Replaceall(tm, "$input", source);
 	Setattr(p, "emit:input", source);	/* Save input location */
 
@@ -767,7 +757,6 @@ public:
     /* Insert constraint checking code */
     for (p = l; p;) {
       if ((tm = Getattr(p, "tmap:check"))) {
-	Replaceall(tm, "$target", Getattr(p, "lname"));
 	Printv(f->code, tm, "\n", NIL);
 	p = Getattr(p, "tmap:check:next");
       } else {
@@ -778,7 +767,6 @@ public:
     /* Insert cleanup code */
     for (i = 0, p = l; p; i++) {
       if ((tm = Getattr(p, "tmap:freearg"))) {
-	Replaceall(tm, "$source", Getattr(p, "lname"));
 	Replaceall(tm, "$arg", Getattr(p, "emit:input"));
 	Replaceall(tm, "$input", Getattr(p, "emit:input"));
 	Printv(cleanup, tm, "\n", NIL);
@@ -793,8 +781,6 @@ public:
     for (i = 0, p = l; p; i++) {
       if ((tm = Getattr(p, "tmap:argout"))) {
 	SwigType *t = Getattr(p, "type");
-	Replaceall(tm, "$source", Getattr(p, "lname"));
-	Replaceall(tm, "$target", "ST(argvi)");
 	Replaceall(tm, "$result", "ST(argvi)");
 	if (is_shadow(t)) {
 	  Replaceall(tm, "$shadow", "SWIG_SHADOW");
@@ -855,8 +841,6 @@ public:
 
     if ((tm = Swig_typemap_lookup_out("out", n, Swig_cresult_name(), f, actioncode))) {
       SwigType *t = Getattr(n, "type");
-      Replaceall(tm, "$source", Swig_cresult_name());
-      Replaceall(tm, "$target", "ST(argvi)");
       Replaceall(tm, "$result", "ST(argvi)");
       if (is_shadow(t)) {
 	Replaceall(tm, "$shadow", "SWIG_SHADOW");
@@ -884,13 +868,11 @@ public:
 
     if (GetFlag(n, "feature:new")) {
       if ((tm = Swig_typemap_lookup("newfree", n, Swig_cresult_name(), 0))) {
-	Replaceall(tm, "$source", Swig_cresult_name());
 	Printf(f->code, "%s\n", tm);
       }
     }
 
     if ((tm = Swig_typemap_lookup("ret", n, Swig_cresult_name(), 0))) {
-      Replaceall(tm, "$source", Swig_cresult_name());
       Printf(f->code, "%s\n", tm);
     }
 
@@ -987,7 +969,8 @@ public:
 
     /* Create a Perl function for setting the variable value */
 
-    if (!GetFlag(n, "feature:immutable")) {
+    int assignable = !is_immutable(n);
+    if (assignable) {
       Setattr(n, "wrap:name", set_name);
       Printf(setf->def, "SWIGCLASS_STATIC int %s(pTHX_ SV* sv, MAGIC * SWIGUNUSEDPARM(mg)) {\n", set_name);
       Printv(setf->code, tab4, "MAGIC_PPERL\n", NIL);
@@ -995,8 +978,6 @@ public:
       /* Check for a few typemaps */
       tm = Swig_typemap_lookup("varin", n, name, 0);
       if (tm) {
-	Replaceall(tm, "$source", "sv");
-	Replaceall(tm, "$target", name);
 	Replaceall(tm, "$input", "sv");
 	/* Printf(setf->code,"%s\n", tm); */
 	emit_action_code(n, setf->code, tm);
@@ -1019,9 +1000,7 @@ public:
     Printv(getf->code, tab4, "MAGIC_PPERL\n", NIL);
 
     if ((tm = Swig_typemap_lookup("varout", n, name, 0))) {
-      Replaceall(tm, "$target", "sv");
       Replaceall(tm, "$result", "sv");
-      Replaceall(tm, "$source", name);
       if (is_shadow(t)) {
 	Replaceall(tm, "$shadow", "SWIG_SHADOW");
       } else {
@@ -1053,7 +1032,7 @@ public:
       tt = NewString("0");
     }
     /* Now add symbol to the PERL interpreter */
-    if (GetFlag(n, "feature:immutable")) {
+    if (!assignable) {
       Printv(variable_tab, tab4, "{ \"", cmodule, "::", iname, "\", MAGIC_CLASS swig_magic_readonly, MAGIC_CLASS ", get_name, ",", tt, " },\n", NIL);
 
     } else {
@@ -1111,8 +1090,6 @@ public:
     }
 
     if ((tm = Swig_typemap_lookup("consttab", n, name, 0))) {
-      Replaceall(tm, "$source", value);
-      Replaceall(tm, "$target", name);
       Replaceall(tm, "$value", value);
       if (is_shadow(type)) {
 	Replaceall(tm, "$shadow", "SWIG_SHADOW");
@@ -1121,8 +1098,6 @@ public:
       }
       Printf(constant_tab, "%s,\n", tm);
     } else if ((tm = Swig_typemap_lookup("constcode", n, name, 0))) {
-      Replaceall(tm, "$source", value);
-      Replaceall(tm, "$target", name);
       Replaceall(tm, "$value", value);
       if (is_shadow(type)) {
 	Replaceall(tm, "$shadow", "SWIG_SHADOW");
@@ -1540,67 +1515,67 @@ public:
     if ((blessed) && (!Getattr(n, "sym:nextSibling"))) {
 
       if (Strstr(symname, "__eq__")) {
-	DohSetInt(operators, "__eq__", 1);
+	SetInt(operators, "__eq__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__ne__")) {
-	DohSetInt(operators, "__ne__", 1);
+	SetInt(operators, "__ne__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__assign__")) {
-	DohSetInt(operators, "__assign__", 1);
+	SetInt(operators, "__assign__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__str__")) {
-	DohSetInt(operators, "__str__", 1);
+	SetInt(operators, "__str__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__add__")) {
-	DohSetInt(operators, "__add__", 1);
+	SetInt(operators, "__add__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__sub__")) {
-	DohSetInt(operators, "__sub__", 1);
+	SetInt(operators, "__sub__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__mul__")) {
-	DohSetInt(operators, "__mul__", 1);
+	SetInt(operators, "__mul__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__div__")) {
-	DohSetInt(operators, "__div__", 1);
+	SetInt(operators, "__div__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__mod__")) {
-	DohSetInt(operators, "__mod__", 1);
+	SetInt(operators, "__mod__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__and__")) {
-	DohSetInt(operators, "__and__", 1);
+	SetInt(operators, "__and__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__or__")) {
-	DohSetInt(operators, "__or__", 1);
+	SetInt(operators, "__or__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__not__")) {
-	DohSetInt(operators, "__not__", 1);
+	SetInt(operators, "__not__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__gt__")) {
-	DohSetInt(operators, "__gt__", 1);
+	SetInt(operators, "__gt__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__ge__")) {
-	DohSetInt(operators, "__ge__", 1);
+	SetInt(operators, "__ge__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__lt__")) {
-	DohSetInt(operators, "__lt__", 1);
+	SetInt(operators, "__lt__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__le__")) {
-	DohSetInt(operators, "__le__", 1);
+	SetInt(operators, "__le__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__neg__")) {
-	DohSetInt(operators, "__neg__", 1);
+	SetInt(operators, "__neg__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__plusplus__")) {
-	DohSetInt(operators, "__plusplus__", 1);
+	SetInt(operators, "__plusplus__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__minmin__")) {
-	DohSetInt(operators, "__minmin__", 1);
+	SetInt(operators, "__minmin__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__mineq__")) {
-	DohSetInt(operators, "__mineq__", 1);
+	SetInt(operators, "__mineq__", 1);
 	have_operators = 1;
       } else if (Strstr(symname, "__pluseq__")) {
-	DohSetInt(operators, "__pluseq__", 1);
+	SetInt(operators, "__pluseq__", 1);
 	have_operators = 1;
       }
 
@@ -2208,14 +2183,6 @@ public:
 	  continue;
 	}
 
-	/* old style?  caused segfaults without the p!=0 check
-	   in the for() condition, and seems dangerous in the
-	   while loop as well.
-	   while (Getattr(p, "tmap:ignore")) {
-	   p = Getattr(p, "tmap:ignore:next");
-	   }
-	 */
-
 	if (Getattr(p, "tmap:directorargout") != 0)
 	  outputs++;
 
@@ -2341,7 +2308,7 @@ public:
 	Replaceall(tm, "$error", "ERRSV");
 	Printv(w->code, Str(tm), "\n", NIL);
       } else {
-	Printf(w->code, "  Swig::DirectorMethodException::raise(ERRSV);\n", classname, pyname);
+	Printf(w->code, "  Swig::DirectorMethodException::raise(ERRSV);\n");
       }
       Append(w->code, "}\n");
       Delete(tm);

@@ -36,13 +36,19 @@ test_const_pointer(cobj)
 -- swig doesn't appear to diff between const object ptrs & object ptrs very well
 test_pointer(cobj)	-- this wants an non const object (give it a const one!)
 
--- refs are also wrappered as ptrs (unless the correct typemaps are applied)
+-- refs are also wrapped as ptrs (unless the correct typemaps are applied)
 robj=test_reference_out()
 assert(is_std_string(robj) and robj:c_str()=="test_reference_out message")	-- check type & value
 
 test_reference(robj)
 test_reference(obj)	-- object ptr is ok
 test_reference(cobj)	-- obj const ptr is also ok
+
+-- Test INPUT, INOUT and OUTPUT string& typemaps:
+assert(test_reference_input("hello")=="hello")
+s=test_reference_inout("hello")
+assert(s=="hellohello")
+assert(test_reference_output()=="output")
 
 -- throwing string
 ok,ex=pcall(test_throw)
@@ -113,3 +119,16 @@ assert(pcall(function () li_std_string.Structure_ConstStaticMemberString='f' end
 assert(type(li_std_string.Structure_StaticMemberString)=="string")
 assert(type(li_std_string.Structure_StaticMemberString2)=="string")
 assert(type(li_std_string.Structure_ConstStaticMemberString)=="string")
+
+
+assert(stdstring_empty()=="")
+assert(c_empty()=="")
+assert(c_null()==nil)
+assert(get_null(c_null())==nil)
+assert(get_null(c_empty())=="non-null")
+assert(get_null(stdstring_empty())=="non-null")
+
+-- Regression test for bug fixed in SWIG 4.2.0: depending on the order of
+-- evaluation of function arguments by the compiler, a numeric value might be
+-- passed as an empty string (seen with GCC 12.2 on x86-64 Linux).
+assert(test_value(1234) == "1234")

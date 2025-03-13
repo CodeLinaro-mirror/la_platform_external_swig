@@ -68,7 +68,6 @@ CCache/config.log
 CCache/config.status
 CCache/config_win32.h
 Examples/Makefile
-Examples/d/example.mk
 Examples/guile/Makefile
 Examples/test-suite/*/Makefile
 Examples/xml/Makefile
@@ -81,14 +80,12 @@ Tools/javascript/Makefile
 config.log
 config.status
 preinst-swig
-swig.spec
 
 # Build Artifacts
 .dirstamp
 CCache/ccache-swig
 CCache/ccache-swig.1
 CCache/web/ccache-swig-man.html
-Lib/swigwarn.swg
 Source/CParse/parser.c
 Source/CParse/parser.h
 Source/eswig
@@ -150,6 +147,8 @@ Examples/guile/*/my-guile
 
 # Java
 Examples/test-suite/java/*/
+Examples/test-suite/java/expected.txt
+Examples/test-suite/java/got.txt
 Examples/java/*/*.java
 !Examples/java/*/runme.java
 Examples/java/doxygen/javadocs
@@ -157,6 +156,14 @@ Examples/java/doxygen/javadocs
 # Javascript
 Examples/test-suite/javascript/*/
 *.gyp
+
+# Lua
+Examples/lua/dual/dual
+Examples/lua/dual/swigluarun.h
+Examples/lua/embed/embed
+Examples/lua/embed2/embed2
+Examples/lua/embed3/embed3
+Examples/lua/embed3/swigluarun.h
 
 # OCaml
 Examples/test-suite/ocaml/*.ml*
@@ -173,6 +180,8 @@ Examples/ocaml/**/swigp4.ml
 # Octave
 swigexample*.oct
 Examples/test-suite/octave/*.oct
+Examples/test-suite/octave/octheaders.hpp
+Examples/test-suite/octave/octheaders.hpp.gch
 
 # Perl5
 Examples/test-suite/perl5/*.pm
@@ -180,11 +189,8 @@ Examples/perl5/*/*.pm
 
 # PHP
 Examples/test-suite/php/php_*.h
-Examples/test-suite/php/*.php
-!Examples/test-suite/php/*runme.php
-!Examples/test-suite/php/skel.php
 Examples/php/*/php_*.h
-Examples/php/*/example.php
+Examples/php/pragmas/example.php
 
 # Python
 #   Based on https://github.com/github/gitignore/blob/master/Python.gitignore

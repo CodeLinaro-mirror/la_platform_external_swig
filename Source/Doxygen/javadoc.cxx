@@ -4,7 +4,7 @@
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
  * included with the SWIG source code as distributed by the SWIG developers
- * and at http://www.swig.org/legal.html.
+ * and at https://www.swig.org/legal.html.
  *
  * javadoc.cxx
  * ----------------------------------------------------------------------------- */
@@ -152,7 +152,7 @@ void JavaDocConverter::fillStaticTables() {
   tagHandlers["f{"] = make_pair(&JavaDocConverter::handleTagVerbatim, "");
 
   tagHandlers["warning"] = make_pair(&JavaDocConverter::handleTagMessage, "Warning: ");
-  // this command just prints it's contents
+  // this command just prints its contents
   // (it is internal command of swig's parser, contains plain text)
   tagHandlers["plainstd::string"] = make_pair(&JavaDocConverter::handlePlainString, "");
   tagHandlers["plainstd::endl"] = make_pair(&JavaDocConverter::handleNewLine, "");
@@ -254,7 +254,7 @@ std::string JavaDocConverter::formatCommand(std::string unformattedLine, int ind
       i += APPROX_LINE_LENGTH - indent * TAB_SIZE;
     }
 
-    i = unformattedLine.find(" ", i);
+    i = unformattedLine.find(' ', i);
 
     if (i > 0 && i + 1 < unformattedLine.length()) {
       if (!isFirstLine)
@@ -334,7 +334,7 @@ std::string JavaDocConverter::translateSubtree(DoxygenEntity &doxygenEntity) {
 void JavaDocConverter::translateEntity(DoxygenEntity &tag, std::string &translatedComment) {
 
   std::map<std::string, std::pair<tagHandler, std::string> >::iterator it;
-  it = tagHandlers.find(tag.typeOfEntity);
+  it = tagHandlers.find(getBaseCommand(tag.typeOfEntity));
 
   if (it != tagHandlers.end()) {
     (this->*(it->second.first))(tag, translatedComment, it->second.second);
@@ -463,7 +463,11 @@ void JavaDocConverter::handleTagImage(DoxygenEntity &tag, std::string &translate
   if (it != tag.entityList.end())
     title = it->data;
 
-  translatedComment += "<img src=" + file;
+  translatedComment += "<img src=";
+  if (file.size() >= 2 && file[0] == '"' && file[file.size() - 1] == '"')
+    translatedComment += file;
+  else
+    translatedComment += "\"" + file + "\"";
   if (title.size())
     translatedComment += " alt=" + title;
 

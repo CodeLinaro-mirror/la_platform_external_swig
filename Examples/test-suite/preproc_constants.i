@@ -37,8 +37,9 @@
 #define CONST_DOUBLE2   10E1
 #define CONST_DOUBLE3   12.3
 #define CONST_DOUBLE4   12.
-#define CONST_DOUBLE5   12.3f
-#define CONST_DOUBLE6   12.3F
+
+#define CONST_FLOAT1    12.3f
+#define CONST_FLOAT2    12.3F
 
 #define CONST_BOOL1     true
 #define CONST_BOOL2     false
@@ -65,17 +66,15 @@
 
 #define EXPR_MULTIPLY    0xFF * 2
 #define EXPR_DIVIDE      0xFF / 2
-//FIXME #define EXPR_MOD         0xFF % 2
+#define EXPR_MOD         0xFF % 2
 
 #define EXPR_PLUS        0xFF + 2
 #define EXPR_MINUS       0xFF + 2
 
 #define EXPR_LSHIFT      0xFF << 2
 #define EXPR_RSHIFT      0xFF >> 2
-/* FIXME
-#define EXPR_LT          0xFF < 255
-#define EXPR_GT          0xFF > 255
-*/
+#define EXPR_LT          (0xFF < 255)
+#define EXPR_GT          (0xFF > 255)
 #define EXPR_LTE         0xFF <= 255
 #define EXPR_GTE         0xFF >= 255
 #define EXPR_INEQUALITY  0xFF != 255
@@ -121,3 +120,9 @@ enum MyEnum {
   kValue = BIT(2)
 };
 
+// For detecting when test-suite is run with SWIGWORDSIZE64 defined
+#ifdef SWIGWORDSIZE64
+#define SWIGWORDSIZE64_enabled 1
+#else
+#define SWIGWORDSIZE64_enabled 0
+#endif

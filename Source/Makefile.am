@@ -6,8 +6,6 @@ AUTOMAKE_OPTIONS = foreign nostdinc subdir-objects 1.7.2
 SOURCE_DIR=$(top_srcdir)/Source
 BUILD_SOURCE_DIR=$(top_builddir)/Source
 
-SWIG_CXX_DEFS = @SWILL@
-
 AM_CPPFLAGS =	-I$(BUILD_SOURCE_DIR)/Include	\
 		-I$(BUILD_SOURCE_DIR)/CParse	\
 		-I$(SOURCE_DIR)/Include		\
@@ -18,13 +16,14 @@ AM_CPPFLAGS =	-I$(BUILD_SOURCE_DIR)/Include	\
 		-I$(SOURCE_DIR)/Swig		\
 		-I$(SOURCE_DIR)/Modules
 
-AM_CXXFLAGS =	$(SWIG_CXX_DEFS)
+AM_CXXFLAGS =
 
-AM_YFLAGS = -d
+AM_YFLAGS = -d -Wall -Werror
 
-BUILT_SOURCES = CParse/parser.h
+
+BUILT_SOURCES = CParse/parser.c CParse/parser.h
 eswig_SOURCES =	CParse/cscanner.c		\
-		CParse/parser.y			\
+		CParse/parser.c			\
 		CParse/templ.c			\
 		CParse/util.c			\
 		DOH/base.c			\
@@ -46,7 +45,6 @@ eswig_SOURCES =	CParse/cscanner.c		\
 		Doxygen/pydoc.cxx		\
 		Doxygen/pydoc.h			\
 		Modules/allocate.cxx		\
-		Modules/browser.cxx		\
 		Modules/contract.cxx		\
 		Modules/csharp.cxx		\
 		Modules/d.cxx			\
@@ -98,10 +96,9 @@ eswig_SOURCES =	CParse/cscanner.c		\
 		Swig/wrapfunc.c
 
 bin_PROGRAMS = eswig
-eswig_LDADD   = @SWIGLIBS@
 
-# Override the link stage to avoid using Libtool
-CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+CParse/parser.c CParse/parser.h: CParse/parser.y
+	$(BISON) $(AM_YFLAGS) $(YFLAGS) --output=CParse/parser.c $(srcdir)/CParse/parser.y
 
 # The executable is copied to the root directory for installation and running the test-suite.
 # This occurs on each invocation of make and is a step towards providing support for multiple
